@@ -1,8 +1,8 @@
-﻿/* Cruxio - service worker
+/* Cruxio - service worker
    Se juega en el colectivo o en la montana, donde no hay senal:
    la app tiene que abrir siempre. App shell cache-first, red primero
    para la navegacion asi una version nueva entra sin trucos. */
-const CACHE = "cruxio-v1.0.0";
+const CACHE = "cruxio-v1.1.0";
 const SHELL = ["./", "./index.html", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./manifest.webmanifest"];
 
 self.addEventListener("install", e => {

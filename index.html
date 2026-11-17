@@ -112,11 +112,16 @@ input::placeholder{color:var(--ink-dim)}
 .ctl{align-items:center;justify-content:space-between}
 .ctl button{flex:0 0 auto}
 .tog.bet{font-size:14px;padding:8px 14px}
+.tog.bet[aria-pressed="false"]{text-decoration:none;color:var(--ink);border-color:var(--line)}
 .tog.bet[aria-pressed="true"]{background:var(--sun);color:#1a1530;border-color:var(--sun);text-decoration:none}
 .tog.bet:disabled{opacity:.45;cursor:default}
 .links{justify-content:center;gap:4px}
 .links button{flex:0 0 auto}
 #achCount{color:var(--sun)}
+#btnNext{position:relative;overflow:hidden}
+#btnNext::after{content:"";position:absolute;inset:0;background:rgba(26,21,48,.2);pointer-events:none;transform:scaleX(0);transform-origin:left}
+#btnNext.auto::after{animation:fillx var(--adv,3.5s) linear forwards}
+@keyframes fillx{to{transform:scaleX(1)}}
 .ver{font-size:11px;color:var(--ink-dim);text-align:center;opacity:.6}
 .logbox{background:var(--soft);border-radius:16px;padding:12px 12px 6px}
 #climbLog svg{display:block;width:100%;height:auto}
@@ -181,7 +186,7 @@ textarea{width:100%;height:84px;background:rgba(4,6,20,.55);color:var(--ink);bor
         <p>La diaria cambia cada día y es la misma para todos. El modo libre no tiene límite.</p>
       </details>
       <div class="row links"><button id="btnStats" type="button" class="link">Estadísticas</button><button id="btnAch" type="button" class="link">Logros <span id="achCount"></span></button></div>
-      <p class="ver">v1.0.0</p>
+      <p class="ver">v1.1.0</p>
     </section>
 
     <section id="sAsk" hidden>
@@ -203,7 +208,7 @@ textarea{width:100%;height:84px;background:rgba(4,6,20,.55);color:var(--ink);bor
       <p class="answer" id="resAnswer"></p>
       <p class="gain" id="resGain"></p>
       <p class="dim" id="resCondor"></p>
-      <button id="btnNext" type="button">Siguiente</button>
+      <button id="btnNext" type="button">Seguir subiendo</button>
     </section>
 
     <section id="sStats" hidden>
@@ -256,675 +261,996 @@ var CAMPS=[[2950,'Horcones'],[3400,'Confluencia'],[4300,'Plaza de Mulas'],[5050,
 
 // [nivel, "Nombre a mostrar", "alias|alias"]
 var QUESTIONS=[
- {q:'Nombrá un país que limite con Brasil',g:'sud',a:[
-  [0,'Argentina'],[0,'Uruguay'],[1,'Paraguay'],[1,'Bolivia'],[2,'Perú'],[2,'Colombia'],[3,'Venezuela'],
-  [4,'Guyana'],[4,'Surinam','suriname'],[5,'Guayana Francesa','francia|guyana francesa']]},
- {q:'Una provincia argentina',a:[
+{q:'Nombrá un país que limite con Brasil',g:'sud',a:[
+  [0,'Argentina'],[0,'Uruguay'],[1,'Paraguay'],[1,'Bolivia'],[2,'Perú'],[2,'Colombia'],[3,'Venezuela'],[4,'Guyana'],[4,'Surinam','suriname'],
+  [5,'Guayana Francesa','francia|guyana francesa']]}
+ , {q:'Una provincia argentina',a:[
   [0,'Buenos Aires','bs as'],[0,'Córdoba'],[0,'Mendoza'],[0,'Santa Fe'],[1,'Salta'],[1,'Tucumán'],[1,'Misiones'],[1,'Neuquén'],
-  [1,'Río Negro','negro'],[1,'Entre Ríos'],[1,'Corrientes'],[1,'Jujuy'],[2,'Chubut'],[2,'San Juan'],[2,'San Luis'],[2,'Chaco'],
-  [2,'Santa Cruz'],[2,'Tierra del Fuego'],[3,'La Pampa'],[3,'Santiago del Estero','santiago'],[4,'La Rioja'],[4,'Catamarca'],[5,'Formosa']]},
- {q:'Un planeta del sistema solar',g:'esp',a:[
-  [0,'Tierra'],[0,'Marte'],[1,'Júpiter'],[1,'Saturno'],[2,'Venus'],[3,'Mercurio'],[4,'Neptuno'],[5,'Urano']]},
- {q:'Un jugador argentino campeón del mundo en Qatar 2022',g:'fut',a:[
+  [1,'Río Negro','negro'],[1,'Entre Ríos'],[1,'Corrientes'],[1,'Jujuy'],[2,'Chubut'],[2,'San Juan'],[2,'San Luis'],[2,'Chaco'],[2,'Santa Cruz'],
+  [2,'Tierra del Fuego'],[3,'La Pampa'],[3,'Santiago del Estero','santiago'],[4,'La Rioja'],[4,'Catamarca'],[5,'Formosa']]}
+ , {q:'Un planeta del sistema solar',g:'esp',a:[
+  [0,'Tierra'],[0,'Marte'],[1,'Júpiter'],[1,'Saturno'],[2,'Venus'],[3,'Mercurio'],[4,'Neptuno'],[5,'Urano']]}
+ , {q:'Un jugador argentino campeón del mundo en Qatar 2022',g:'fut',a:[
   [0,'Lionel Messi','messi|leo messi|lio messi'],[0,'Ángel Di María','di maria|fideo'],
-  [0,'Emiliano Martínez','dibu martinez|dibu|martinez|emi martinez'],
-  [1,'Julián Álvarez','alvarez|julian'],[1,'Rodrigo De Paul','de paul'],[1,'Enzo Fernández','enzo|fernandez'],
-  [1,'Alexis Mac Allister','mac allister|macallister'],[2,'Nicolás Otamendi','otamendi'],[2,'Lautaro Martínez','lautaro'],
-  [2,'Paulo Dybala','dybala'],[2,'Cristian Romero','cuti romero|romero|cuti'],[2,'Gonzalo Montiel','montiel|cachete montiel'],
-  [2,'Leandro Paredes','paredes'],[3,'Nahuel Molina','molina'],[3,'Nicolás Tagliafico','tagliafico'],
-  [3,'Marcos Acuña','acuna|huevo acuna'],[3,'Lisandro Martínez','lisandro|licha martinez|licha'],
-  [3,'Alejandro Gómez','papu gomez|papu|gomez'],[4,'Franco Armani','armani'],[4,'Germán Pezzella','pezzella|pezella'],
-  [4,'Juan Foyth','foyth'],[4,'Exequiel Palacios','palacios'],[4,'Guido Rodríguez','guido|rodriguez'],
-  [4,'Ángel Correa','correa'],[4,'Thiago Almada','almada'],[5,'Gerónimo Rulli','rulli|geronimo rulli']]},
- {q:'Una banda de rock nacional',a:[
-  [0,'Soda Stereo','soda'],[0,'Los Redondos','patricio rey y sus redonditos de ricota|redonditos de ricota|redonditos|patricio rey'],
-  [1,'La Renga'],[1,'Los Piojos'],[1,'Divididos'],[1,'Los Fabulosos Cadillacs','fabulosos cadillacs|cadillacs'],
-  [2,'Callejeros'],[2,'Babasónicos'],[2,'Sumo'],[2,'Serú Girán'],[2,'Sui Generis'],[2,'Airbag'],
-  [2,'Los Auténticos Decadentes','autenticos decadentes|decadentes'],[2,'Bersuit Vergarabat','bersuit|la bersuit'],
-  [2,'Los Enanitos Verdes','enanitos verdes|enanitos'],[3,'Virus'],[3,'Ratones Paranoicos','los ratones paranoicos|ratones|los ratones'],
-  [3,'Attaque 77','attaque|ataque 77'],[3,'Rata Blanca'],[3,'Los Pericos','pericos'],[3,'Catupecu Machu','catupecu'],
-  [3,'Los Abuelos de la Nada','abuelos de la nada|los abuelos'],[3,'Miranda','miranda!'],[3,'Intoxicados'],[3,'Las Pelotas'],
-  [3,'Ciro y los Persas','ciro y los persas|los persas'],[4,'Almendra'],[4,'Manal'],[4,'Pescado Rabioso'],[4,'Vox Dei'],
-  [4,'Los Twist','twist'],[4,'Los Tipitos','tipitos'],[4,'Guasones'],[5,'Los Gatos','gatos'],[5,'Invisible'],
-  [5,'Don Cornelio y la Zona','don cornelio']]},
- {q:'Un río de Sudamérica',a:[
-  [0,'Amazonas'],[0,'Paraná'],[0,'Río de la Plata','de la plata|plata'],[1,'Uruguay'],[2,'Orinoco'],[2,'Paraguay'],
-  [2,'Negro'],[2,'Iguazú'],[3,'Colorado'],[3,'Magdalena'],[3,'Pilcomayo'],[3,'Bermejo'],[3,'Salado'],[3,'Limay'],
-  [3,'Suquía','primero'],[3,'Mendoza'],[3,'Neuquén'],[4,'Madeira'],[4,'São Francisco','san francisco'],[4,'Tocantins'],
-  [4,'Xingu','xingú'],[4,'Tapajós'],[4,'Biobío','bio bio'],[4,'Cauca'],[4,'Marañón'],[4,'Putumayo'],[4,'Desaguadero'],
-  [4,'Dulce'],[4,'Chubut'],[4,'Santa Cruz'],[4,'Carcarañá'],[5,'Ucayali'],[5,'Caroní'],[5,'Esequibo','essequibo'],
-  [5,'Purús'],[5,'Beni'],[5,'Mamoré'],[5,'Caquetá','japura']]},
- {q:'Una comida típica argentina',a:[
-  [0,'Asado'],[0,'Empanadas','empanada'],[0,'Milanesa','milanesas|milanesa a la napolitana|mila'],
-  [1,'Choripán','chori'],[1,'Locro'],[1,'Dulce de leche'],[1,'Alfajor','alfajores'],[2,'Humita','humitas|humita en chala'],
-  [2,'Tamales','tamal'],[2,'Provoleta'],[2,'Medialunas','medialuna'],[2,'Chimichurri'],[2,'Chocotorta'],
-  [3,'Carbonada'],[3,'Matambre','matambre a la pizza'],[3,'Pastel de papa','pastel de papas'],[3,'Guiso de lentejas','lentejas'],
-  [3,'Fainá'],[3,'Fugazzeta','fugazza'],[3,'Chipá','chipa'],[3,'Vitel toné','vitel tone|vitel thone'],[3,'Tortas fritas','torta frita'],
+  [0,'Emiliano Martínez','dibu martinez|dibu|martinez|emi martinez'],[1,'Julián Álvarez','alvarez|julian'],[1,'Rodrigo De Paul','de paul'],
+  [1,'Enzo Fernández','enzo|fernandez'],[1,'Alexis Mac Allister','mac allister|macallister'],[2,'Nicolás Otamendi','otamendi'],
+  [2,'Lautaro Martínez','lautaro'],[2,'Paulo Dybala','dybala'],[2,'Cristian Romero','cuti romero|romero|cuti'],
+  [2,'Gonzalo Montiel','montiel|cachete montiel'],[2,'Leandro Paredes','paredes'],[3,'Nahuel Molina','molina'],[3,'Nicolás Tagliafico','tagliafico'],
+  [3,'Marcos Acuña','acuna|huevo acuna'],[3,'Lisandro Martínez','lisandro|licha martinez|licha'],[3,'Alejandro Gómez','papu gomez|papu|gomez'],
+  [4,'Franco Armani','armani'],[4,'Germán Pezzella','pezzella|pezella'],[4,'Juan Foyth','foyth'],[4,'Exequiel Palacios','palacios'],
+  [4,'Guido Rodríguez','guido|rodriguez'],[4,'Ángel Correa','correa'],[4,'Thiago Almada','almada'],[5,'Gerónimo Rulli','rulli|geronimo rulli']]}
+ , {q:'Una banda de rock nacional',a:[
+  [0,'Soda Stereo','soda'],[0,'Los Redondos','patricio rey y sus redonditos de ricota|redonditos de ricota|redonditos|patricio rey'],[1,'La Renga'],
+  [1,'Los Piojos'],[1,'Divididos'],[1,'Los Fabulosos Cadillacs','fabulosos cadillacs|cadillacs'],[2,'Callejeros'],[2,'Babasónicos'],[2,'Sumo'],
+  [2,'Serú Girán'],[2,'Sui Generis'],[2,'Airbag'],[2,'Los Auténticos Decadentes','autenticos decadentes|decadentes'],
+  [2,'Bersuit Vergarabat','bersuit|la bersuit'],[2,'Los Enanitos Verdes','enanitos verdes|enanitos'],[2,'La Beriso'],[2,'Tan Biónica'],[3,'Virus'],
+  [3,'Ratones Paranoicos','los ratones paranoicos|ratones|los ratones'],[3,'Attaque 77','attaque|ataque 77'],[3,'Rata Blanca'],
+  [3,'Los Pericos','pericos'],[3,'Catupecu Machu','catupecu'],[3,'Los Abuelos de la Nada','abuelos de la nada|los abuelos'],[3,'Miranda','miranda!'],
+  [3,'Intoxicados'],[3,'Las Pelotas'],[3,'Ciro y los Persas','ciro y los persas|los persas'],[3,'Turf'],[3,'Árbol'],[3,'Los Cafres'],[3,'Almafuerte'],
+  [3,'El Mató a un Policía Motorizado','el mato|el mato a un policia'],[3,'Eruca Sativa'],[3,'Bandalos Chinos'],[3,'Las Pastillas del Abuelo'],
+  [3,'Viejas Locas'],[3,'Kapanga'],[3,'2 Minutos','dos minutos'],[4,'Almendra'],[4,'Manal'],[4,'Pescado Rabioso'],[4,'Vox Dei'],
+  [4,'Los Twist','twist'],[4,'Los Tipitos','tipitos'],[4,'Guasones'],[4,'Hermética'],[4,'V8'],[4,'Riff'],[4,'Los Violadores'],[4,'Massacre'],
+  [4,'El Bordo'],[4,'Jóvenes Pordioseros'],[4,'La 25'],[4,'Pier'],[4,'Los Gardelitos'],[4,'Los Caballeros de la Quema'],[4,'Los Visitantes'],
+  [4,'Juana la Loca'],[4,'GIT'],[4,'A.N.I.M.A.L.','animal'],[4,'Carajo'],[4,'Estelares'],[4,'Los Espíritus'],[5,'Los Gatos','gatos'],[5,'Invisible'],
+  [5,'Don Cornelio y la Zona','don cornelio'],[5,'Zas'],[5,'Man Ray'],[5,'Los Brujos'],[5,'Peligrosos Gorriones'],[5,'Spinetta Jade'],
+  [5,'Color Humano'],[5,'La Máquina de Hacer Pájaros'],[5,'Malón'],[5,'Los Natas'],[5,'Suéter'],[5,'Fricción'],[5,'Usted Señálemelo']]}
+ , {q:'Un río de Sudamérica',a:[
+  [0,'Amazonas'],[0,'Paraná'],[0,'Río de la Plata','de la plata|plata'],[1,'Uruguay'],[2,'Orinoco'],[2,'Paraguay'],[2,'Negro'],[2,'Iguazú'],
+  [2,'Riachuelo','matanza|matanza riachuelo'],[3,'Colorado'],[3,'Magdalena'],[3,'Pilcomayo'],[3,'Bermejo'],[3,'Salado'],[3,'Limay'],
+  [3,'Suquía','primero'],[3,'Mendoza'],[3,'Neuquén'],[3,'Luján'],[3,'Atuel'],[3,'Tercero','ctalamochita'],[3,'Cuarto','chocancharava'],
+  [3,'Segundo','xanaes'],[4,'Madeira'],[4,'São Francisco','san francisco'],[4,'Tocantins'],[4,'Xingu','xingú'],[4,'Tapajós'],[4,'Biobío','bio bio'],
+  [4,'Cauca'],[4,'Marañón'],[4,'Putumayo'],[4,'Desaguadero'],[4,'Dulce'],[4,'Chubut'],[4,'Santa Cruz'],[4,'Carcarañá'],[4,'Diamante'],[4,'Tunuyán'],
+  [4,'Gallegos'],[4,'Deseado'],[4,'Futaleufú'],[4,'Manso'],[4,'Gualeguay'],[4,'Gualeguaychú'],[4,'Reconquista'],[4,'San Juan'],[4,'Grande'],
+  [4,'Araguaia'],[4,'Urubamba'],[4,'Maipo'],[5,'Ucayali'],[5,'Caroní'],[5,'Esequibo','essequibo'],[5,'Purús'],[5,'Beni'],[5,'Mamoré'],
+  [5,'Caquetá','japura'],[5,'Quinto','popopis'],[5,'Juramento'],[5,'Senguer'],[5,'Aluminé'],[5,'Collón Curá'],[5,'Jáchal'],[5,'Coronda'],
+  [5,'Quequén'],[5,'Sauce Grande'],[5,'Barrancas'],[5,'Napo'],[5,'Tietê'],[5,'Apurímac'],[5,'Huallaga'],[5,'Maule'],[5,'Loa'],[5,'Atrato'],[5,'Meta'],
+  [5,'Apure'],[5,'Guaviare'],[5,'Santa Lucía'],[5,'Cuareim'],[5,'Tebicuary']]}
+ , {q:'Una comida típica argentina',g:'comida',a:[
+  [0,'Asado'],[0,'Empanadas','empanada'],[0,'Milanesa','milanesas|milanesa a la napolitana|mila'],[1,'Choripán','chori'],[1,'Locro'],
+  [1,'Dulce de leche'],[1,'Alfajor','alfajores'],[1,'Pizza'],[2,'Humita','humitas|humita en chala'],[2,'Tamales','tamal'],[2,'Provoleta'],
+  [2,'Medialunas','medialuna'],[2,'Chimichurri'],[2,'Chocotorta'],[2,'Facturas','factura'],[2,'Pastafrola','pasta frola'],[2,'Churros','churro'],
+  [2,'Flan','flan con dulce de leche'],[2,'Pancho','panchos'],[3,'Carbonada'],[3,'Matambre','matambre a la pizza'],
+  [3,'Pastel de papa','pastel de papas'],[3,'Guiso de lentejas','lentejas'],[3,'Fainá'],[3,'Fugazzeta','fugazza'],[3,'Chipá','chipa'],
+  [3,'Vitel toné','vitel tone|vitel thone'],[3,'Tortas fritas','torta frita'],
   [3,'Sándwich de miga','sanguche de miga|sandwiches de miga|sanguches de miga'],[3,'Lomito'],[3,'Bondiola'],[3,'Morcilla'],
   [3,'Chinchulines','chinchulin'],[3,'Mollejas','molleja'],[3,'Vacío'],[3,'Puchero'],[3,'Ñoquis','noquis del 29'],
-  [4,'Revuelto gramajo','gramajo'],[4,'Mazamorra'],[4,'Pastelitos','pastelito'],[4,'Mondongo'],[4,'Sorrentinos'],
-  [4,'Polenta'],[4,'Rogel'],[5,'Charqui','charque'],[5,'Chanfaina'],[5,'Tomaticán'],[5,'Torta balcarce','balcarce'],
-  [5,'Quesillo con miel de caña','quesillo']]}
- ,{q:'Un país de Sudamérica',g:'sud',a:[
-  [0,'Argentina'],[0,'Brasil'],[1,'Chile'],[1,'Uruguay'],[2,'Colombia'],[2,'Perú'],[2,'Paraguay'],[2,'Bolivia'],
-  [3,'Venezuela'],[3,'Ecuador'],[5,'Guyana'],[5,'Surinam','suriname']]}
- ,{q:'Una capital de Sudamérica',g:'sud',a:[
-  [0,'Buenos Aires','bs as'],[0,'Montevideo'],[1,'Santiago','santiago de chile'],[1,'Lima'],[1,'Brasilia'],[2,'Bogotá'],
-  [2,'Asunción'],[2,'Caracas'],[3,'Quito'],[3,'La Paz'],[4,'Sucre'],[5,'Georgetown'],[5,'Paramaribo']]}
- ,{q:'Una capital europea',a:[
-  [0,'París'],[0,'Madrid'],[0,'Londres'],[0,'Roma'],[1,'Berlín'],[1,'Lisboa'],[2,'Atenas'],[2,'Ámsterdam'],[2,'Viena'],
-  [2,'Bruselas'],[2,'Moscú'],[2,'Dublín'],[3,'Praga'],[3,'Budapest'],[3,'Varsovia'],[3,'Estocolmo'],[3,'Oslo'],
-  [3,'Copenhague'],[3,'Helsinki'],[3,'Berna'],[3,'Kiev','kyiv'],[4,'Bucarest'],[4,'Sofía'],[4,'Belgrado'],[4,'Zagreb'],
-  [4,'Reikiavik','reykjavik'],[4,'Bratislava'],[4,'Tallin','tallinn'],[4,'Riga'],[4,'Minsk'],[4,'Sarajevo'],
-  [4,'Luxemburgo'],[4,'Mónaco'],[4,'San Marino'],[4,'Ciudad del Vaticano','vaticano'],[5,'Liubliana','ljubljana|lubliana'],
-  [5,'Vilna','vilnius'],[5,'Tirana'],[5,'Skopie','skopje'],[5,'Podgorica'],[5,'Chisináu','chisinau|kishinev'],
-  [5,'La Valeta','valletta'],[5,'Andorra la Vieja','andorra la vella'],[5,'Vaduz'],[5,'Nicosia'],[5,'Pristina']]}
- ,{q:'Un gas noble',a:[
+  [3,'Bizcochitos','bizcochitos de grasa'],[3,'Ensalada rusa'],[3,'Tarta','tartas'],[3,'Tortilla de papas','tortilla'],[3,'Pan dulce'],
+  [3,'Panqueques','panqueque'],[3,'Garrapiñada','garrapinadas'],[3,'Postre vigilante','vigilante|queso y dulce'],[3,'Picada'],
+  [3,'Tostado','tostados'],[3,'Dulce de batata'],[3,'Dulce de membrillo','membrillo'],[3,'Sándwich de milanesa','sanguche de milanesa|milanga'],
+  [4,'Revuelto gramajo','gramajo'],[4,'Mazamorra'],[4,'Pastelitos','pastelito'],[4,'Mondongo'],[4,'Sorrentinos'],[4,'Polenta'],[4,'Rogel'],
+  [4,'Rosca de Pascua','rosca'],[4,'Arroz con leche'],[4,'Budín de pan'],[4,'Mantecol'],[4,'Pionono'],[4,'Sopa paraguaya'],[4,'Guiso de arroz'],
+  [4,'Lengua a la vinagreta','lengua'],[4,'Escabeche'],[4,'Cordero patagónico','cordero'],[4,'Chivito'],[4,'Pastel de choclo'],[4,'Torta galesa'],
+  [4,'Sambayón'],[5,'Charqui','charque'],[5,'Chanfaina'],[5,'Tomaticán'],[5,'Torta balcarce','balcarce'],[5,'Quesillo con miel de caña','quesillo'],
+  [5,'Cañoncitos de dulce de leche','canoncitos'],[5,'Chipa guazú'],[5,'Api'],[5,'Anchi'],[5,'Calapurca'],[5,'Frangollo'],[5,'Ambrosía']]}
+ , {q:'Un país de Sudamérica',g:'sud',a:[
+  [0,'Argentina'],[0,'Brasil'],[1,'Chile'],[1,'Uruguay'],[2,'Colombia'],[2,'Perú'],[2,'Paraguay'],[2,'Bolivia'],[3,'Venezuela'],[3,'Ecuador'],
+  [5,'Guyana'],[5,'Surinam','suriname']]}
+ , {q:'Una capital de Sudamérica',g:'sud',a:[
+  [0,'Buenos Aires','bs as'],[0,'Montevideo'],[1,'Santiago','santiago de chile'],[1,'Lima'],[1,'Brasilia'],[2,'Bogotá'],[2,'Asunción'],[2,'Caracas'],
+  [3,'Quito'],[3,'La Paz'],[4,'Sucre'],[5,'Georgetown'],[5,'Paramaribo']]}
+ , {q:'Una capital europea',a:[
+  [0,'París'],[0,'Madrid'],[0,'Londres'],[0,'Roma'],[1,'Berlín'],[1,'Lisboa'],[2,'Atenas'],[2,'Ámsterdam'],[2,'Viena'],[2,'Bruselas'],[2,'Moscú'],
+  [2,'Dublín'],[3,'Praga'],[3,'Budapest'],[3,'Varsovia'],[3,'Estocolmo'],[3,'Oslo'],[3,'Copenhague'],[3,'Helsinki'],[3,'Berna'],[3,'Kiev','kyiv'],
+  [4,'Bucarest'],[4,'Sofía'],[4,'Belgrado'],[4,'Zagreb'],[4,'Reikiavik','reykjavik'],[4,'Bratislava'],[4,'Tallin','tallinn'],[4,'Riga'],[4,'Minsk'],
+  [4,'Sarajevo'],[4,'Luxemburgo'],[4,'Mónaco'],[4,'San Marino'],[4,'Ciudad del Vaticano','vaticano'],[5,'Liubliana','ljubljana|lubliana'],
+  [5,'Vilna','vilnius'],[5,'Tirana'],[5,'Skopie','skopje'],[5,'Podgorica'],[5,'Chisináu','chisinau|kishinev'],[5,'La Valeta','valletta'],
+  [5,'Andorra la Vieja','andorra la vella'],[5,'Vaduz'],[5,'Nicosia'],[5,'Pristina']]}
+ , {q:'Un gas noble',a:[
   [0,'Helio'],[0,'Neón'],[1,'Argón'],[2,'Xenón'],[2,'Kriptón','cripton'],[4,'Radón'],[5,'Oganesón','oganesson']]}
- ,{q:'Un hueso del cuerpo humano',a:[
-  [0,'Fémur'],[0,'Cráneo'],[1,'Costilla','costillas'],[1,'Tibia'],[1,'Húmero'],[2,'Vértebra','vertebras|columna|columna vertebral'],
-  [2,'Peroné'],[2,'Radio'],[2,'Cúbito'],[2,'Clavícula'],[2,'Rótula'],[2,'Pelvis','cadera'],[2,'Mandíbula'],[3,'Esternón'],
-  [3,'Omóplato','escapula|omoplato'],[3,'Falange','falanges'],[3,'Coxis','coccix'],[3,'Maxilar'],[4,'Sacro'],[4,'Atlas'],
-  [4,'Estribo'],[4,'Yunque'],[4,'Martillo'],[4,'Calcáneo'],[4,'Escafoides'],[4,'Occipital'],[4,'Parietal'],[4,'Temporal'],
-  [4,'Frontal'],[4,'Metacarpiano','metacarpo|metacarpianos'],[4,'Metatarsiano','metatarso|metatarsianos'],[4,'Carpo'],
-  [4,'Tarso'],[4,'Pubis'],[5,'Axis'],[5,'Hioides'],[5,'Astrágalo'],[5,'Vómer'],[5,'Etmoides'],[5,'Esfenoides'],
-  [5,'Ilion'],[5,'Isquion'],[5,'Cigomático','malar|pomulo']]}
- ,{q:'Un instrumento musical de cuerdas',g:'mus',a:[
-  [0,'Guitarra','guitarra criolla|guitarra acustica'],[0,'Violín'],[1,'Bajo','bajo electrico'],[1,'Guitarra eléctrica'],
-  [2,'Piano'],[2,'Arpa'],[2,'Violonchelo','cello|chelo|violoncello'],[2,'Contrabajo'],[2,'Ukelele','ukulele'],[3,'Charango'],
-  [3,'Banjo'],[3,'Mandolina'],[3,'Viola'],[4,'Laúd'],[4,'Cítara'],[4,'Sitar'],[4,'Guitarrón'],[4,'Lira'],[4,'Requinto'],
-  [5,'Bandurria'],[5,'Balalaica','balalaika'],[5,'Clavecín','clave|clavicordio'],[5,'Cuatro','cuatro venezolano'],
-  [5,'Tiple'],[5,'Koto'],[5,'Bouzouki','buzuki']]}
- ,{q:'Un presidente argentino desde 1983',a:[
-  [0,'Javier Milei','milei'],[0,'Cristina Fernández de Kirchner','cristina kirchner|cristina|cristina fernandez|cfk'],
-  [0,'Carlos Menem','menem'],[1,'Mauricio Macri','macri'],[1,'Néstor Kirchner','kirchner|nestor'],
-  [1,'Raúl Alfonsín','alfonsin'],[2,'Alberto Fernández','alberto|fernandez'],[2,'Fernando de la Rúa','de la rua'],
-  [3,'Eduardo Duhalde','duhalde'],[4,'Adolfo Rodríguez Saá','rodriguez saa|adolfo'],[5,'Ramón Puerta','puerta'],
+ , {q:'Un hueso del cuerpo humano',g:'cuerpo',a:[
+  [0,'Fémur'],[0,'Cráneo'],[1,'Costilla','costillas'],[1,'Tibia'],[1,'Húmero'],[2,'Vértebra','vertebras|columna|columna vertebral'],[2,'Peroné'],
+  [2,'Radio'],[2,'Cúbito'],[2,'Clavícula'],[2,'Rótula'],[2,'Pelvis','cadera'],[2,'Mandíbula'],[3,'Esternón'],[3,'Omóplato','escapula|omoplato'],
+  [3,'Falange','falanges'],[3,'Coxis','coccix'],[3,'Maxilar'],[4,'Sacro'],[4,'Atlas'],[4,'Estribo'],[4,'Yunque'],[4,'Martillo'],[4,'Calcáneo'],
+  [4,'Escafoides'],[4,'Occipital'],[4,'Parietal'],[4,'Temporal'],[4,'Frontal'],[4,'Metacarpiano','metacarpo|metacarpianos'],
+  [4,'Metatarsiano','metatarso|metatarsianos'],[4,'Carpo'],[4,'Tarso'],[4,'Pubis'],[5,'Axis'],[5,'Hioides'],[5,'Astrágalo'],[5,'Vómer'],
+  [5,'Etmoides'],[5,'Esfenoides'],[5,'Ilion'],[5,'Isquion'],[5,'Cigomático','malar|pomulo']]}
+ , {q:'Un instrumento musical de cuerdas',g:'mus',a:[
+  [0,'Guitarra','guitarra criolla|guitarra acustica'],[0,'Violín'],[1,'Bajo','bajo electrico'],[1,'Guitarra eléctrica'],[2,'Piano'],[2,'Arpa'],
+  [2,'Violonchelo','cello|chelo|violoncello'],[2,'Contrabajo'],[2,'Ukelele','ukulele'],[3,'Charango'],[3,'Banjo'],[3,'Mandolina'],[3,'Viola'],
+  [4,'Laúd'],[4,'Cítara'],[4,'Sitar'],[4,'Guitarrón'],[4,'Lira'],[4,'Requinto'],[4,'Vihuela'],[4,'Arpa paraguaya'],[5,'Bandurria'],
+  [5,'Balalaica','balalaika'],[5,'Clavecín','clave|clavicordio'],[5,'Cuatro','cuatro venezolano'],[5,'Tiple'],[5,'Koto'],[5,'Bouzouki','buzuki'],
+  [5,'Ronroco'],[5,'Walaycho'],[5,'Salterio'],[5,'Zanfona'],[5,'Viola da gamba'],[5,'Shamisen'],[5,'Pipa'],[5,'Erhu'],[5,'Guzheng'],[5,'Dobro'],
+  [5,'Lap steel','steel guitar'],[5,'Cavaquinho'],[5,'Berimbau'],[5,'Kora'],[5,'Oud','laud arabe']]}
+ , {q:'Un presidente argentino desde 1983',a:[
+  [0,'Javier Milei','milei'],[0,'Cristina Fernández de Kirchner','cristina kirchner|cristina|cristina fernandez|cfk'],[0,'Carlos Menem','menem'],
+  [1,'Mauricio Macri','macri'],[1,'Néstor Kirchner','kirchner|nestor'],[1,'Raúl Alfonsín','alfonsin'],[2,'Alberto Fernández','alberto|fernandez'],
+  [2,'Fernando de la Rúa','de la rua'],[3,'Eduardo Duhalde','duhalde'],[4,'Adolfo Rodríguez Saá','rodriguez saa|adolfo'],[5,'Ramón Puerta','puerta'],
   [5,'Eduardo Camaño','camano']]}
- ,{q:'Un color del arcoíris',a:[
+ , {q:'Un color del arcoíris',a:[
   [0,'Rojo'],[0,'Azul'],[1,'Amarillo'],[1,'Verde'],[2,'Violeta'],[2,'Naranja','anaranjado'],[5,'Añil','indigo']]}
- ,{q:'Un animal autóctono de Argentina',a:[
-  [0,'Puma'],[0,'Cóndor','condor andino'],[0,'Carpincho','capibara'],[1,'Yaguareté','jaguar'],[1,'Guanaco'],[1,'Ñandú','choique'],
-  [1,'Hornero'],[1,'Zorro','zorro colorado|zorro gris'],[1,'Llama'],[2,'Vicuña'],[2,'Pingüino','pinguino de magallanes'],
-  [2,'Mulita','tatu|armadillo|peludo|quirquincho'],[2,'Yacaré'],[2,'Ballena franca','ballena|ballena franca austral'],
-  [2,'Lobo marino'],[2,'Vizcacha'],[2,'Tucán'],[2,'Tero'],[3,'Coatí'],[3,'Oso hormiguero'],[3,'Aguará guazú'],[3,'Huemul'],
-  [3,'Mara','liebre patagonica'],[3,'Tapir','anta'],[3,'Mono carayá','caraya|mono aullador'],[3,'Flamenco'],[3,'Cardenal'],
-  [3,'Carancho'],[3,'Chimango'],[3,'Benteveo','bichofeo'],[3,'Elefante marino'],[3,'Orca'],[3,'Zorrino'],
-  [3,'Comadreja','zarigueya'],[3,'Coipo','nutria'],[3,'Surubí'],[3,'Dorado'],[3,'Yarará'],[4,'Ciervo de los pantanos'],
-  [4,'Pudú'],[4,'Pecarí'],[4,'Gato montés'],[4,'Chajá'],[4,'Loro barranquero'],[5,'Taruca'],[5,'Gato andino'],
-  [5,'Chinchillón'],[5,'Cauquén'],[5,'Tonina overa','tonina'],[5,'Lampalagua'],[5,'Macá tobiano']]}
- ,{q:'Una ciudad o pueblo de la provincia de Córdoba',a:[
-  [0,'Córdoba','cordoba capital'],[0,'Villa Carlos Paz','carlos paz'],[1,'Río Cuarto'],[1,'Villa María'],[1,'Alta Gracia'],
-  [1,'Cosquín'],[1,'Villa General Belgrano','general belgrano|villa belgrano'],[2,'San Francisco'],[2,'La Falda'],
-  [2,'Jesús María'],[2,'Río Tercero'],[2,'Mina Clavero'],[2,'Capilla del Monte'],[3,'Bell Ville'],[3,'Villa Dolores'],
-  [3,'Cruz del Eje'],[3,'Río Ceballos'],[3,'La Cumbre'],[3,'Unquillo'],[3,'Villa Allende'],[3,'Marcos Juárez'],[3,'Arroyito'],
-  [3,'Río Segundo'],[3,'Embalse'],[3,'Santa Rosa de Calamuchita','santa rosa'],[3,'La Cumbrecita'],
-  [3,'Villa Cura Brochero','cura brochero'],[3,'Colonia Caroya'],[3,'Tanti'],[4,'Laboulaye'],[4,'Deán Funes'],[4,'La Carlota'],
-  [4,'Oncativo'],[4,'Leones'],[4,'Morteros'],[4,'Las Varillas'],[4,'Nono'],[4,'General Deheza'],[4,'Hernando'],[4,'Villa Nueva'],
-  [4,'Malagueño'],[4,'Mendiolaza'],[4,'Villa Giardino'],[4,'Huerta Grande'],[4,'Los Cocos'],[4,'San Marcos Sierras'],[4,'Pilar'],
-  [4,'Oliva'],[5,'Huinca Renancó'],[5,'Villa del Totoral'],[5,'Corral de Bustos'],[5,'Saldán'],[5,'Villa de Soto'],
-  [5,'Río Primero'],[5,'Justiniano Posse'],[5,'Vicuña Mackenna'],[5,'Ucacha']]}
- ,{q:'Un país de África',g:'pais',a:[
-  [0,'Egipto'],[0,'Sudáfrica'],[0,'Marruecos'],[1,'Nigeria'],[1,'Kenia'],[2,'Senegal'],[2,'Argelia'],[2,'Etiopía'],[2,'Ghana'],
-  [2,'Camerún'],[2,'Túnez'],[2,'Madagascar'],[2,'Congo','republica democratica del congo|rd congo|republica del congo|zaire'],
-  [3,'Angola'],[3,'Tanzania'],[3,'Uganda'],[3,'Somalia'],[3,'Sudán'],[3,'Libia'],[3,'Mozambique'],[3,'Costa de Marfil'],
-  [3,'Zimbabue','zimbabwe'],[3,'Ruanda'],[3,'Mali'],[4,'Zambia'],[4,'Níger'],[4,'Chad'],[4,'Namibia'],[4,'Botsuana','botswana'],
-  [4,'Gabón'],[4,'Guinea'],[4,'Togo'],[4,'Benín'],[4,'Burkina Faso'],[4,'Mauritania'],[4,'Liberia'],[4,'Sierra Leona'],
-  [4,'Gambia'],[4,'Guinea Ecuatorial'],[4,'Cabo Verde'],[4,'Seychelles'],[4,'Mauricio'],[5,'Malaui','malawi'],[5,'Lesoto','lesotho'],
-  [5,'Esuatini','suazilandia|eswatini'],[5,'Yibuti','djibouti'],[5,'Eritrea'],[5,'Burundi'],[5,'Guinea-Bisáu','guinea bissau'],
-  [5,'Comoras'],[5,'Santo Tomé y Príncipe','santo tome'],[5,'Sudán del Sur'],[5,'República Centroafricana']]}
- ,{q:'Un club campeón de la Copa Libertadores',g:'fut',a:[
-  [0,'Boca Juniors','boca'],[0,'River Plate','river'],[1,'Independiente'],[2,'Estudiantes','estudiantes de la plata'],
-  [2,'Racing','racing club'],[2,'Flamengo'],[2,'Palmeiras'],[3,'Vélez','velez sarsfield'],[3,'San Lorenzo'],[3,'Peñarol'],
-  [3,'Nacional','nacional de montevideo'],[3,'Santos'],[3,'São Paulo','san pablo'],[3,'Grêmio'],[3,'Corinthians'],
-  [3,'Fluminense'],[3,'Olimpia'],[3,'Colo-Colo'],[4,'Argentinos Juniors','argentinos'],[4,'Cruzeiro'],
-  [4,'Internacional','inter de porto alegre'],[4,'Atlético Mineiro','mineiro'],[4,'Botafogo'],
+ , {q:'Un animal autóctono de Argentina',g:'animal',a:[
+  [0,'Puma'],[0,'Cóndor','condor andino'],[0,'Carpincho','capibara'],[1,'Yaguareté','jaguar'],[1,'Guanaco'],[1,'Ñandú','choique|suri'],[1,'Hornero'],
+  [1,'Zorro','zorro colorado|zorro gris'],[1,'Llama'],[2,'Vicuña'],[2,'Pingüino','pinguino de magallanes'],
+  [2,'Mulita','tatu|armadillo|peludo|quirquincho'],[2,'Yacaré'],[2,'Ballena franca','ballena|ballena franca austral'],[2,'Lobo marino'],
+  [2,'Vizcacha'],[2,'Tucán'],[2,'Tero'],[3,'Coatí'],[3,'Oso hormiguero'],[3,'Aguará guazú'],[3,'Huemul'],[3,'Mara','liebre patagonica'],
+  [3,'Tapir','anta'],[3,'Mono carayá','caraya|mono aullador'],[3,'Flamenco'],[3,'Cardenal'],[3,'Carancho'],[3,'Chimango'],[3,'Benteveo','bichofeo'],
+  [3,'Elefante marino'],[3,'Orca'],[3,'Zorrino'],[3,'Comadreja','zarigueya'],[3,'Coipo','nutria'],[3,'Surubí'],[3,'Dorado'],[3,'Yarará'],
+  [3,'Picaflor','colibri'],[3,'Pájaro carpintero','carpintero'],[3,'Garza'],[3,'Murciélago'],[4,'Ciervo de los pantanos'],[4,'Pudú'],[4,'Pecarí'],
+  [4,'Gato montés'],[4,'Chajá'],[4,'Loro barranquero'],[4,'Corzuela','guazuncho'],[4,'Tatú carreta'],[4,'Cuis'],[4,'Chinchilla'],
+  [4,'Hurón','huroncito'],[4,'Ñacurutú'],[4,'Lechuza vizcachera','lechucita vizcachera'],[4,'Calandria'],[4,'Zorzal'],[4,'Martín pescador'],
+  [4,'Cisne de cuello negro','cisne'],[4,'Jote'],[4,'Halcón peregrino'],[4,'Águila mora'],[4,'Lagarto overo','iguana overa'],
+  [4,'Víbora de coral','coral'],[4,'Víbora de cascabel','cascabel'],[4,'Escuerzo'],[4,'Pejerrey'],[4,'Bagre'],[4,'Pacú'],[4,'Tararira'],[4,'Sábalo'],
+  [4,'Centolla'],[5,'Taruca'],[5,'Gato andino'],[5,'Chinchillón'],[5,'Cauquén'],[5,'Tonina overa','tonina'],[5,'Lampalagua'],[5,'Macá tobiano'],
+  [5,'Pichiciego'],[5,'Tuco-tuco','tucutuco'],[5,'Monito de monte'],[5,'Yaguarundí'],[5,'Gato de Geoffroy'],[5,'Gato del pajonal'],[5,'Franciscana'],
+  [5,'Chuña']]}
+ , {q:'Una ciudad o pueblo de la provincia de Córdoba',a:[
+  [0,'Córdoba','cordoba capital'],[0,'Villa Carlos Paz','carlos paz'],[1,'Río Cuarto'],[1,'Villa María'],[1,'Alta Gracia'],[1,'Cosquín'],
+  [1,'Villa General Belgrano','general belgrano|villa belgrano'],[2,'San Francisco'],[2,'La Falda'],[2,'Jesús María'],[2,'Río Tercero'],
+  [2,'Mina Clavero'],[2,'Capilla del Monte'],[3,'Bell Ville'],[3,'Villa Dolores'],[3,'Cruz del Eje'],[3,'Río Ceballos'],[3,'La Cumbre'],
+  [3,'Unquillo'],[3,'Villa Allende'],[3,'Marcos Juárez'],[3,'Arroyito'],[3,'Río Segundo'],[3,'Embalse'],[3,'Santa Rosa de Calamuchita','santa rosa'],
+  [3,'La Cumbrecita'],[3,'Villa Cura Brochero','cura brochero'],[3,'Colonia Caroya'],[3,'Tanti'],[4,'Laboulaye'],[4,'Deán Funes'],[4,'La Carlota'],
+  [4,'Oncativo'],[4,'Leones'],[4,'Morteros'],[4,'Las Varillas'],[4,'Nono'],[4,'General Deheza'],[4,'Hernando'],[4,'Villa Nueva'],[4,'Malagueño'],
+  [4,'Mendiolaza'],[4,'Villa Giardino'],[4,'Huerta Grande'],[4,'Los Cocos'],[4,'San Marcos Sierras'],[4,'Pilar'],[4,'Oliva'],[5,'Huinca Renancó'],
+  [5,'Villa del Totoral'],[5,'Corral de Bustos'],[5,'Saldán'],[5,'Villa de Soto'],[5,'Río Primero'],[5,'Justiniano Posse'],[5,'Vicuña Mackenna'],
+  [5,'Ucacha']]}
+ , {q:'Un país de África',g:'pais',a:[
+  [0,'Egipto'],[0,'Sudáfrica'],[0,'Marruecos'],[1,'Nigeria'],[1,'Kenia'],[2,'Senegal'],[2,'Argelia'],[2,'Etiopía'],[2,'Ghana'],[2,'Camerún'],
+  [2,'Túnez'],[2,'Madagascar'],[2,'Congo','republica democratica del congo|rd congo|republica del congo|zaire'],[3,'Angola'],[3,'Tanzania'],
+  [3,'Uganda'],[3,'Somalia'],[3,'Sudán'],[3,'Libia'],[3,'Mozambique'],[3,'Costa de Marfil'],[3,'Zimbabue','zimbabwe'],[3,'Ruanda'],[3,'Mali'],
+  [4,'Zambia'],[4,'Níger'],[4,'Chad'],[4,'Namibia'],[4,'Botsuana','botswana'],[4,'Gabón'],[4,'Guinea'],[4,'Togo'],[4,'Benín'],[4,'Burkina Faso'],
+  [4,'Mauritania'],[4,'Liberia'],[4,'Sierra Leona'],[4,'Gambia'],[4,'Guinea Ecuatorial'],[4,'Cabo Verde'],[4,'Seychelles'],[4,'Mauricio'],
+  [5,'Malaui','malawi'],[5,'Lesoto','lesotho'],[5,'Esuatini','suazilandia|eswatini'],[5,'Yibuti','djibouti'],[5,'Eritrea'],[5,'Burundi'],
+  [5,'Guinea-Bisáu','guinea bissau'],[5,'Comoras'],[5,'Santo Tomé y Príncipe','santo tome'],[5,'Sudán del Sur'],[5,'República Centroafricana']]}
+ , {q:'Un club campeón de la Copa Libertadores',g:'fut',a:[
+  [0,'Boca Juniors','boca'],[0,'River Plate','river'],[1,'Independiente'],[2,'Estudiantes','estudiantes de la plata'],[2,'Racing','racing club'],
+  [2,'Flamengo'],[2,'Palmeiras'],[3,'Vélez','velez sarsfield'],[3,'San Lorenzo'],[3,'Peñarol'],[3,'Nacional','nacional de montevideo'],[3,'Santos'],
+  [3,'São Paulo','san pablo'],[3,'Grêmio'],[3,'Corinthians'],[3,'Fluminense'],[3,'Olimpia'],[3,'Colo-Colo'],[4,'Argentinos Juniors','argentinos'],
+  [4,'Cruzeiro'],[4,'Internacional','inter de porto alegre'],[4,'Atlético Mineiro','mineiro'],[4,'Botafogo'],
   [4,'Atlético Nacional','atletico nacional de medellin'],[4,'Liga de Quito','ldu|ldu quito|liga deportiva universitaria'],
   [5,'Vasco da Gama','vasco'],[5,'Once Caldas']]}
- ,{q:'Una película de Pixar',a:[
-  [0,'Toy Story','toy story 2|toy story 3|toy story 4'],[0,'Buscando a Nemo','nemo'],[1,'Cars'],
+ , {q:'Una película de Pixar',g:'peli',a:[
+  [0,'Toy Story','toy story 2|toy story 3|toy story 4|toy story 5'],[0,'Buscando a Nemo','nemo'],[1,'Cars'],
   [1,'Monsters, Inc.','monsters inc|monster inc'],[1,'Los Increíbles','increibles'],[1,'Up'],[1,'Coco'],
-  [1,'Intensa-Mente','intensamente|intensamente 2|del reves'],[2,'Ratatouille'],[2,'WALL-E','wall e|walle'],[2,'Soul'],
-  [2,'Buscando a Dory','dory'],[3,'Bichos','bichos una aventura en miniatura'],[3,'Valiente','brave'],[3,'Luca'],[3,'Red'],
-  [3,'Lightyear'],[3,'Elementos','elemental'],[3,'Monsters University'],[4,'Un gran dinosaurio'],[4,'Unidos','onward'],
-  [5,'Elio']]}
- ,{q:'Un personaje de Mafalda',a:[
-  [0,'Mafalda'],[1,'Manolito'],[1,'Susanita'],[1,'Felipe'],[2,'Miguelito'],[2,'Libertad'],[2,'Guille'],
-  [4,'Raquel','mama|mama de mafalda'],[4,'El papá','papa|papa de mafalda'],[5,'Burocracia','tortuga'],[5,'Muriel']]}
- ,{q:'Un país que empiece con la letra C',g:'pais',a:[
-  [0,'Colombia'],[0,'Chile'],[0,'China'],[0,'Canadá'],[1,'Cuba'],[1,'Costa Rica'],[2,'Croacia'],[2,'Corea del Sur','corea'],
-  [3,'Corea del Norte'],[3,'Camerún'],[3,'Catar','qatar'],[4,'Chipre'],[4,'Chad'],[4,'Camboya'],[4,'Costa de Marfil'],
+  [1,'Intensa-Mente','intensamente|intensamente 2|del reves'],[2,'Ratatouille'],[2,'WALL-E','wall e|walle'],[2,'Soul'],[2,'Buscando a Dory','dory'],
+  [3,'Bichos','bichos una aventura en miniatura'],[3,'Valiente','brave'],[3,'Luca'],[3,'Red'],[3,'Lightyear'],[3,'Elementos','elemental'],
+  [3,'Monsters University'],[4,'Un gran dinosaurio'],[4,'Unidos','onward'],[5,'Elio'],[5,'Hoppers']]}
+ , {q:'Un personaje de Mafalda',a:[
+  [0,'Mafalda'],[1,'Manolito'],[1,'Susanita'],[1,'Felipe'],[2,'Miguelito'],[2,'Libertad'],[2,'Guille'],[4,'Raquel','mama|mama de mafalda'],
+  [4,'El papá','papa|papa de mafalda'],[5,'Burocracia','tortuga'],[5,'Muriel']]}
+ , {q:'Un país que empiece con la letra C',g:'pais',a:[
+  [0,'Colombia'],[0,'Chile'],[0,'China'],[0,'Canadá'],[1,'Cuba'],[1,'Costa Rica'],[2,'Croacia'],[2,'Corea del Sur','corea'],[3,'Corea del Norte'],
+  [3,'Camerún'],[3,'Catar','qatar'],[3,'Chequia','republica checa'],[4,'Chipre'],[4,'Chad'],[4,'Camboya'],[4,'Costa de Marfil'],
   [4,'Congo','republica del congo'],[5,'Cabo Verde'],[5,'Comoras'],[5,'Ciudad del Vaticano','vaticano']]}
- ,{q:'Un cerro o volcán de la Cordillera de los Andes',a:[
-  [0,'Aconcagua'],[1,'Fitz Roy','chalten|cerro chalten'],[1,'Lanín'],[2,'Tronador'],[2,'Chimborazo'],[2,'Cotopaxi'],
-  [2,'Catedral','cerro catedral'],[3,'Tupungato'],[3,'Ojos del Salado'],[3,'Huascarán'],[3,'Llullaillaco'],
-  [3,'Cerro Torre','torre'],[3,'Villarrica'],[3,'Osorno'],[3,'Copahue'],[4,'Mercedario'],[4,'Illimani'],[4,'Pissis','monte pissis'],
-  [4,'Licancabur'],[4,'Alpamayo'],[4,'Misti'],[4,'Nevado del Ruiz','ruiz'],[4,'Domuyo'],[4,'Maipo'],[4,'Huayna Potosí'],
-  [5,'Bonete','cerro bonete'],[5,'Sajama'],[5,'Incahuasi'],[5,'Tres Cruces'],[5,'San Valentín'],[5,'El Plomo','cerro el plomo|plomo'],
-  [5,'Ausangate'],[5,'Cayambe'],[5,'Antisana'],[5,'Pico Bolívar'],[5,'Socompa'],[5,'Marmolejo'],[5,'Yerupajá']]}
- ,{q:'Un parque nacional argentino',a:[
-  [0,'Iguazú'],[0,'Nahuel Huapi'],[1,'Los Glaciares','glaciares'],[1,'Tierra del Fuego'],[2,'Talampaya'],[2,'Lanín'],
-  [2,'Los Alerces','alerces'],[2,'El Palmar','palmar'],[2,'Quebrada del Condorito','condorito'],[2,'Iberá'],[3,'Los Cardones','cardones'],
-  [3,'Calilegua'],[3,'Sierra de las Quijadas','quijadas'],[3,'El Impenetrable','impenetrable'],[3,'Perito Moreno'],
-  [3,'Los Arrayanes','arrayanes'],[3,'Lago Puelo'],[3,'Ansenuza'],[4,'Lihué Calel'],[4,'Monte León'],[4,'Chaco'],
-  [4,'Río Pilcomayo','pilcomayo'],[4,'El Rey'],[4,'El Leoncito','leoncito'],[4,'Traslasierra'],[4,'Aconquija'],[5,'Baritú'],
-  [5,'Copo'],[5,'San Guillermo'],[5,'Mburucuyá'],[5,'Pre-Delta','predelta'],[5,'Laguna Blanca'],
-  [5,'Bosques Petrificados de Jaramillo','bosques petrificados'],[5,'Campos del Tuyú'],[5,'Ciervo de los Pantanos'],
-  [5,'Islas de Santa Fe'],[5,'Patagonia'],[5,'Laguna de los Pozuelos','pozuelos']]}
- ,{q:'Un escritor o escritora de Argentina',a:[
-  [0,'Jorge Luis Borges','borges'],[0,'Julio Cortázar','cortazar'],[1,'Ernesto Sabato','sabato'],
-  [2,'Adolfo Bioy Casares','bioy casares|bioy'],[2,'Alfonsina Storni','storni|alfonsina'],[2,'José Hernández','hernandez'],
-  [2,'Domingo Faustino Sarmiento','sarmiento'],[2,'María Elena Walsh','walsh'],[2,'Roberto Fontanarrosa','fontanarrosa'],
-  [3,'Roberto Arlt','arlt'],[3,'Manuel Puig','puig'],[3,'Alejandra Pizarnik','pizarnik'],[3,'Victoria Ocampo','ocampo'],
-  [3,'Osvaldo Soriano','soriano'],[3,'Leopoldo Lugones','lugones'],[3,'Rodolfo Walsh'],[3,'Claudia Piñeiro','pineiro'],
-  [3,'Mariana Enriquez','enriquez'],[3,'Esteban Echeverría','echeverria'],[3,'Eduardo Sacheri','sacheri'],
-  [4,'Silvina Ocampo'],[4,'Ricardo Piglia','piglia'],[4,'Manuel Mujica Lainez','mujica lainez'],[4,'Leopoldo Marechal','marechal'],
-  [4,'Juan José Saer','saer'],[4,'Samanta Schweblin','schweblin'],[4,'Juan Gelman','gelman'],[4,'Oliverio Girondo','girondo'],
-  [4,'César Aira','aira'],[4,'Ricardo Güiraldes','guiraldes'],[4,'Alejandro Dolina','dolina'],[4,'Liliana Bodoc','bodoc'],
-  [4,'Camila Sosa Villada','sosa villada'],[5,'Héctor Tizón','tizon'],[5,'Antonio Di Benedetto','di benedetto'],
-  [5,'Macedonio Fernández','macedonio'],[5,'Sara Gallardo','gallardo'],[5,'Abelardo Castillo','castillo'],
-  [5,'Selva Almada','almada'],[5,'Gabriela Cabezón Cámara','cabezon camara'],[5,'Hebe Uhart','uhart']]}
- ,{q:'Un jugador argentino campeón del mundo en México 86',g:'fut',a:[
-  [0,'Diego Maradona','maradona|diego armando maradona|diego|el diego'],[1,'Jorge Burruchaga','burruchaga|burru'],
-  [1,'Jorge Valdano','valdano'],[1,'Oscar Ruggeri','ruggeri'],[2,'Daniel Passarella','passarella|pasarella'],
-  [2,'Nery Pumpido','pumpido'],[2,'Sergio Batista','batista|checho batista|checho'],[2,'José Luis Brown','brown|tata brown'],
-  [3,'Ricardo Bochini','bochini|bocha'],[3,'Ricardo Giusti','giusti'],[3,'Julio Olarticoechea','olarticoechea|vasco olarticoechea'],
-  [3,'Héctor Enrique','enrique|negro enrique'],[4,'José Luis Cuciuffo','cuciuffo'],[4,'Claudio Borghi','borghi|bichi borghi'],
-  [4,'Pedro Pasculli','pasculli'],[4,'Luis Islas','islas'],[4,'Oscar Garré','garre'],[4,'Carlos Tapia','tapia'],
-  [5,'Néstor Clausen','clausen'],[5,'Marcelo Trobbiani','trobbiani'],[5,'Sergio Almirón','almiron'],[5,'Héctor Zelada','zelada']]}
- ,{q:'Un piloto campeón del mundo de Fórmula 1',a:[
-  [0,'Juan Manuel Fangio','fangio'],[0,'Michael Schumacher','schumacher|schumi'],[0,'Lewis Hamilton','hamilton'],
-  [0,'Max Verstappen','verstappen'],[1,'Ayrton Senna','senna'],[1,'Sebastian Vettel','vettel'],[1,'Fernando Alonso','alonso'],
-  [2,'Alain Prost','prost'],[2,'Niki Lauda','lauda'],[2,'Lando Norris','norris'],[3,'Kimi Räikkönen','raikkonen|kimi'],
-  [3,'Nico Rosberg','rosberg|keke rosberg'],[3,'Jenson Button','button'],[3,'Mika Häkkinen','hakkinen'],
-  [3,'Nelson Piquet','piquet'],[3,'Nigel Mansell','mansell'],[3,'Jackie Stewart','stewart'],[3,'Emerson Fittipaldi','fittipaldi'],
-  [3,'James Hunt','hunt'],[4,'Damon Hill','hill|graham hill'],[4,'Jacques Villeneuve','villeneuve'],[4,'Jim Clark','clark'],
-  [4,'Jack Brabham','brabham'],[4,'Alberto Ascari','ascari'],[4,'Mario Andretti','andretti'],[5,'Giuseppe Farina','farina|nino farina'],
-  [5,'Mike Hawthorn','hawthorn'],[5,'Phil Hill'],[5,'John Surtees','surtees'],[5,'Denny Hulme','hulme'],[5,'Jochen Rindt','rindt'],
-  [5,'Jody Scheckter','scheckter'],[5,'Alan Jones','jones']]}
- ,{q:'Un dinosaurio',a:[
+ , {q:'Un cerro o volcán de la Cordillera de los Andes',a:[
+  [0,'Aconcagua'],[1,'Fitz Roy','chalten|cerro chalten'],[1,'Lanín'],[2,'Tronador'],[2,'Chimborazo'],[2,'Cotopaxi'],[2,'Catedral','cerro catedral'],
+  [3,'Tupungato'],[3,'Ojos del Salado'],[3,'Huascarán'],[3,'Llullaillaco'],[3,'Cerro Torre','torre'],[3,'Villarrica'],[3,'Osorno'],[3,'Copahue'],
+  [3,'Cerro Otto','otto'],[3,'Chapelco'],[4,'Mercedario'],[4,'Illimani'],[4,'Pissis','monte pissis'],[4,'Licancabur'],[4,'Alpamayo'],[4,'Misti'],
+  [4,'Nevado del Ruiz','ruiz'],[4,'Domuyo'],[4,'Maipo'],[4,'Huayna Potosí'],[4,'Calbuco'],[4,'Chaitén'],[4,'Puyehue'],[4,'Llaima'],[4,'Sangay'],
+  [4,'Tungurahua'],[4,'Pichincha'],[4,'Salcantay'],[4,'Huayna Picchu'],[4,'Cerro Rico','cerro rico de potosi'],[4,'Parinacota'],
+  [5,'Bonete','cerro bonete'],[5,'Sajama'],[5,'Incahuasi'],[5,'Tres Cruces'],[5,'San Valentín'],[5,'El Plomo','cerro el plomo|plomo'],[5,'Ausangate'],
+  [5,'Cayambe'],[5,'Antisana'],[5,'Pico Bolívar'],[5,'Socompa'],[5,'Marmolejo'],[5,'Yerupajá'],[5,'Pomerape'],[5,'Láscar'],[5,'Tolima'],
+  [5,'Cerro San Lorenzo','san lorenzo'],[5,'Cerro El Plata','el plata'],[5,'Vallecitos'],[5,'Peteroa'],[5,'Lonquimay'],[5,'Cerro Bayo'],
+  [5,'Nevado de Cachi','cachi'],[5,'Nevado de Chañi','chani'],[5,'Galeras'],[5,'Ubinas'],[5,'Sabancaya'],[5,'Coropuna'],
+  [5,'Nevado del Huila','huila'],[5,'Pico Humboldt']]}
+ , {q:'Un parque nacional argentino',a:[
+  [0,'Iguazú'],[0,'Nahuel Huapi'],[1,'Los Glaciares','glaciares'],[1,'Tierra del Fuego'],[2,'Talampaya'],[2,'Lanín'],[2,'Los Alerces','alerces'],
+  [2,'El Palmar','palmar'],[2,'Quebrada del Condorito','condorito'],[2,'Iberá'],[3,'Los Cardones','cardones'],[3,'Calilegua'],
+  [3,'Sierra de las Quijadas','quijadas'],[3,'El Impenetrable','impenetrable'],[3,'Perito Moreno'],[3,'Los Arrayanes','arrayanes'],[3,'Lago Puelo'],
+  [3,'Ansenuza'],[4,'Lihué Calel'],[4,'Monte León'],[4,'Chaco'],[4,'Río Pilcomayo','pilcomayo'],[4,'El Rey'],[4,'El Leoncito','leoncito'],
+  [4,'Traslasierra'],[4,'Aconquija'],[5,'Baritú'],[5,'Copo'],[5,'San Guillermo'],[5,'Mburucuyá'],[5,'Pre-Delta','predelta'],[5,'Laguna Blanca'],
+  [5,'Bosques Petrificados de Jaramillo','bosques petrificados'],[5,'Campos del Tuyú'],[5,'Ciervo de los Pantanos'],[5,'Islas de Santa Fe'],
+  [5,'Patagonia'],[5,'Laguna de los Pozuelos','pozuelos']]}
+ , {q:'Un escritor o escritora de Argentina',a:[
+  [0,'Jorge Luis Borges','borges'],[0,'Julio Cortázar','cortazar'],[1,'Ernesto Sabato','sabato'],[2,'Adolfo Bioy Casares','bioy casares|bioy'],
+  [2,'Alfonsina Storni','storni|alfonsina'],[2,'José Hernández','hernandez'],[2,'Domingo Faustino Sarmiento','sarmiento'],
+  [2,'María Elena Walsh','walsh'],[2,'Roberto Fontanarrosa','fontanarrosa'],[3,'Roberto Arlt','arlt'],[3,'Manuel Puig','puig'],
+  [3,'Alejandra Pizarnik','pizarnik'],[3,'Victoria Ocampo','ocampo'],[3,'Osvaldo Soriano','soriano'],[3,'Leopoldo Lugones','lugones'],
+  [3,'Rodolfo Walsh'],[3,'Claudia Piñeiro','pineiro'],[3,'Mariana Enriquez','enriquez'],[3,'Esteban Echeverría','echeverria'],
+  [3,'Eduardo Sacheri','sacheri'],[3,'Elsa Bornemann','bornemann'],[3,'Hernán Casciari','casciari'],[3,'Florencia Bonelli','bonelli'],
+  [3,'Felipe Pigna','pigna'],[3,'Jorge Bucay','bucay'],[3,'Gabriel Rolón','rolon'],[4,'Silvina Ocampo'],[4,'Ricardo Piglia','piglia'],
+  [4,'Manuel Mujica Lainez','mujica lainez'],[4,'Leopoldo Marechal','marechal'],[4,'Juan José Saer','saer'],[4,'Samanta Schweblin','schweblin'],
+  [4,'Juan Gelman','gelman'],[4,'Oliverio Girondo','girondo'],[4,'César Aira','aira'],[4,'Ricardo Güiraldes','guiraldes'],
+  [4,'Alejandro Dolina','dolina'],[4,'Liliana Bodoc','bodoc'],[4,'Camila Sosa Villada','sosa villada'],[4,'Graciela Montes'],
+  [4,'Haroldo Conti','conti'],[4,'Olga Orozco','orozco'],[4,'Silvina Bullrich'],[4,'Marco Denevi','denevi'],[4,'Tomás Eloy Martínez'],
+  [4,'Osvaldo Bayer','bayer'],[4,'Arturo Jauretche','jauretche'],[4,'Guillermo Martínez'],[4,'Pablo De Santis','de santis'],
+  [4,'Federico Andahazi','andahazi'],[4,'Pedro Mairal','mairal'],[4,'Leila Guerriero','guerriero'],
+  [4,'Lucio V. Mansilla','mansilla|lucio victorio mansilla'],[4,'Estanislao del Campo'],[5,'Héctor Tizón','tizon'],
+  [5,'Antonio Di Benedetto','di benedetto'],[5,'Macedonio Fernández','macedonio'],[5,'Sara Gallardo','gallardo'],[5,'Abelardo Castillo','castillo'],
+  [5,'Selva Almada','almada'],[5,'Gabriela Cabezón Cámara','cabezon camara'],[5,'Hebe Uhart','uhart'],[5,'Gustavo Roldán'],[5,'Ema Wolf'],
+  [5,'Isidoro Blaisten','blaisten'],[5,'Paco Urondo','urondo'],[5,'Juan L. Ortiz','juanele'],[5,'Beatriz Guido'],
+  [5,'Raúl Scalabrini Ortiz','scalabrini ortiz'],[5,'Martín Kohan','kohan'],[5,'Andrés Neuman','neuman'],[5,'Eduardo Mallea','mallea'],
+  [5,'Roberto Payró','payro'],[5,'Baldomero Fernández Moreno'],[5,'Evaristo Carriego','carriego'],[5,'Liliana Heker','heker'],
+  [5,'María Teresa Andruetto','andruetto'],[5,'Ana María Shua','shua'],[5,'Luisa Valenzuela'],[5,'Griselda Gambaro','gambaro']]}
+ , {q:'Un jugador argentino campeón del mundo en México 86',g:'fut',a:[
+  [0,'Diego Maradona','maradona|diego armando maradona|diego|el diego'],[1,'Jorge Burruchaga','burruchaga|burru'],[1,'Jorge Valdano','valdano'],
+  [1,'Oscar Ruggeri','ruggeri'],[2,'Daniel Passarella','passarella|pasarella'],[2,'Nery Pumpido','pumpido'],
+  [2,'Sergio Batista','batista|checho batista|checho'],[2,'José Luis Brown','brown|tata brown'],[3,'Ricardo Bochini','bochini|bocha'],
+  [3,'Ricardo Giusti','giusti'],[3,'Julio Olarticoechea','olarticoechea|vasco olarticoechea'],[3,'Héctor Enrique','enrique|negro enrique'],
+  [4,'José Luis Cuciuffo','cuciuffo'],[4,'Claudio Borghi','borghi|bichi borghi'],[4,'Pedro Pasculli','pasculli'],[4,'Luis Islas','islas'],
+  [4,'Oscar Garré','garre'],[4,'Carlos Tapia','tapia'],[5,'Néstor Clausen','clausen'],[5,'Marcelo Trobbiani','trobbiani'],
+  [5,'Sergio Almirón','almiron'],[5,'Héctor Zelada','zelada']]}
+ , {q:'Un piloto campeón del mundo de Fórmula 1',a:[
+  [0,'Juan Manuel Fangio','fangio'],[0,'Michael Schumacher','schumacher|schumi'],[0,'Lewis Hamilton','hamilton'],[0,'Max Verstappen','verstappen'],
+  [1,'Ayrton Senna','senna'],[1,'Sebastian Vettel','vettel'],[1,'Fernando Alonso','alonso'],[2,'Alain Prost','prost'],[2,'Niki Lauda','lauda'],
+  [2,'Lando Norris','norris'],[3,'Kimi Räikkönen','raikkonen|kimi'],[3,'Nico Rosberg','rosberg|keke rosberg'],[3,'Jenson Button','button'],
+  [3,'Mika Häkkinen','hakkinen'],[3,'Nelson Piquet','piquet'],[3,'Nigel Mansell','mansell'],[3,'Jackie Stewart','stewart'],
+  [3,'Emerson Fittipaldi','fittipaldi'],[3,'James Hunt','hunt'],[4,'Damon Hill','hill|graham hill'],[4,'Jacques Villeneuve','villeneuve'],
+  [4,'Jim Clark','clark'],[4,'Jack Brabham','brabham'],[4,'Alberto Ascari','ascari'],[4,'Mario Andretti','andretti'],
+  [5,'Giuseppe Farina','farina|nino farina'],[5,'Mike Hawthorn','hawthorn'],[5,'Phil Hill'],[5,'John Surtees','surtees'],[5,'Denny Hulme','hulme'],
+  [5,'Jochen Rindt','rindt'],[5,'Jody Scheckter','scheckter'],[5,'Alan Jones','jones']]}
+ , {q:'Un dinosaurio',a:[
   [0,'Tiranosaurio','t rex|tyrannosaurus rex|tiranosaurio rex|tyrannosaurus|tiranosaurus rex|rex'],[0,'Velociraptor','raptor'],
   [1,'Triceratops','triceratop'],[2,'Diplodocus','diplodoco'],[2,'Estegosaurio','stegosaurus|estegosaurus'],
   [2,'Braquiosaurio','brachiosaurus|braquiosaurus'],[3,'Argentinosaurus','argentinosaurio'],[3,'Giganotosaurus','giganotosaurio'],
   [3,'Espinosaurio','spinosaurus|espinosaurus'],[3,'Anquilosaurio','ankylosaurus|anquilosaurus'],[3,'Alosaurio','allosaurus|alosaurus'],
   [4,'Carnotaurus','carnotauro'],[4,'Iguanodonte','iguanodon'],[4,'Patagotitan'],[4,'Apatosaurio','brontosaurio|apatosaurus|brontosaurus'],
-  [4,'Parasaurolophus','parasaurolofus|parasaurolofo'],[4,'Dilofosaurio','dilophosaurus'],
-  [5,'Paquicefalosaurio','pachycephalosaurus'],[5,'Herrerasaurus','herrerasaurio'],[5,'Eoraptor'],[5,'Compsognathus','compsognato'],
-  [5,'Gallimimus'],[5,'Amargasaurus','amargasaurio'],[5,'Baryonyx'],[5,'Therizinosaurus','terizinosaurio'],[5,'Oviraptor'],
-  [5,'Megalosaurio','megalosaurus'],[5,'Abelisaurus','abelisaurio'],[5,'Saltasaurus','saltasaurio']]}
- ,{q:'Una ciudad sede de los Juegos Olímpicos de verano',a:[
-  [0,'París'],[0,'Londres'],[0,'Tokio'],[0,'Río de Janeiro','rio'],[1,'Atenas'],[1,'Barcelona'],[1,'Pekín','beijing'],
-  [1,'Los Ángeles'],[2,'Sídney'],[2,'Atlanta'],[2,'Ciudad de México','mexico|mexico df'],[3,'Seúl'],[3,'Moscú'],[3,'Montreal'],
-  [3,'Múnich'],[3,'Roma'],[3,'Berlín'],[4,'Melbourne'],[4,'Helsinki'],[4,'Ámsterdam'],[4,'Estocolmo'],[4,'Brisbane'],
-  [5,'Amberes'],[5,'San Luis','saint louis|st louis']]}
- ,{q:'Una raza de perro',a:[
+  [4,'Parasaurolophus','parasaurolofus|parasaurolofo'],[4,'Dilofosaurio','dilophosaurus'],[4,'Archaeopteryx','arqueopterix'],
+  [5,'Paquicefalosaurio','pachycephalosaurus'],[5,'Herrerasaurus','herrerasaurio'],[5,'Eoraptor'],[5,'Compsognathus','compsognato'],[5,'Gallimimus'],
+  [5,'Amargasaurus','amargasaurio'],[5,'Baryonyx'],[5,'Therizinosaurus','terizinosaurio'],[5,'Oviraptor'],[5,'Megalosaurio','megalosaurus'],
+  [5,'Abelisaurus','abelisaurio'],[5,'Saltasaurus','saltasaurio'],[5,'Mapusaurus'],[5,'Megaraptor'],[5,'Unenlagia'],[5,'Noasaurus'],
+  [5,'Piatnitzkysaurus'],[5,'Puertasaurus'],[5,'Dreadnoughtus'],[5,'Quilmesaurus'],[5,'Deinonychus'],[5,'Troodon'],[5,'Microraptor'],
+  [5,'Edmontosaurus'],[5,'Maiasaura'],[5,'Protoceratops'],[5,'Styracosaurus'],[5,'Torosaurus'],[5,'Ceratosaurus'],[5,'Coelophysis'],
+  [5,'Plateosaurus'],[5,'Camarasaurus'],[5,'Kentrosaurus'],[5,'Tarbosaurus'],[5,'Albertosaurus'],[5,'Gorgosaurus'],[5,'Austroraptor'],
+  [5,'Buitreraptor'],[5,'Mussaurus'],[5,'Riojasaurus'],[5,'Pisanosaurus']]}
+ , {q:'Una ciudad sede de los Juegos Olímpicos de verano',a:[
+  [0,'París'],[0,'Londres'],[0,'Tokio'],[0,'Río de Janeiro','rio'],[1,'Atenas'],[1,'Barcelona'],[1,'Pekín','beijing'],[1,'Los Ángeles'],[2,'Sídney'],
+  [2,'Atlanta'],[2,'Ciudad de México','mexico|mexico df'],[3,'Seúl'],[3,'Moscú'],[3,'Montreal'],[3,'Múnich'],[3,'Roma'],[3,'Berlín'],[4,'Melbourne'],
+  [4,'Helsinki'],[4,'Ámsterdam'],[4,'Estocolmo'],[4,'Brisbane'],[5,'Amberes'],[5,'San Luis','saint louis|st louis']]}
+ , {q:'Una raza de perro',a:[
   [0,'Labrador','labrador retriever'],[0,'Ovejero alemán','pastor aleman'],[0,'Caniche','poodle'],[1,'Bulldog','bulldog frances|bulldog ingles'],
-  [1,'Golden retriever','golden'],[1,'Chihuahua'],[1,'Salchicha','dachshund|teckel|perro salchicha'],[1,'Pitbull','pit bull'],
-  [2,'Rottweiler'],[2,'Dogo argentino','dogo'],[2,'Beagle'],[2,'Boxer'],[2,'Doberman'],[2,'Husky siberiano','husky'],
-  [2,'Pug','carlino'],[2,'Border collie'],[2,'Yorkshire terrier','yorkshire|yorkie'],[2,'Dálmata'],[3,'Shih tzu'],[3,'Galgo'],
-  [3,'Gran danés'],[3,'San Bernardo'],[3,'Cocker spaniel','cocker'],[3,'Schnauzer'],[3,'Chow chow'],[3,'Shar pei'],[3,'Akita'],
-  [3,'Shiba inu','shiba'],[3,'Maltés','bichon maltes'],[3,'Pomerania'],[3,'Pequinés'],[3,'Collie'],[3,'Fox terrier'],
-  [3,'Jack Russell','jack russell terrier'],[3,'Bull terrier'],[3,'Basset hound','basset'],[3,'Corgi'],[3,'Cane corso'],
-  [3,'Pastor belga','malinois|pastor belga malinois'],[4,'Bichón frisé','bichon'],[4,'Mastín','mastin napolitano'],[4,'Weimaraner'],
-  [4,'Pointer'],[4,'Braco'],[4,'Setter irlandés','setter'],[4,'Terranova'],[4,'Samoyedo'],[4,'Boyero de Berna','bernes de la montana|bernes'],
-  [4,'Whippet'],[4,'Alaskan malamute','malamute'],[4,'Lebrel afgano','afgano'],[4,'Fila brasileño','fila'],[5,'Pila argentino','pila'],
-  [5,'Xoloitzcuintle','xolo'],[5,'Borzoi'],[5,'Basenji'],[5,'Komondor'],[5,'Leonberger'],[5,'Papillón'],[5,'Saluki']]}
- ,{q:'Un estado de Estados Unidos',a:[
-  [0,'California'],[0,'Texas','tejas'],[0,'Florida'],[0,'Nueva York','new york'],[1,'Hawái','hawaii'],[1,'Alaska'],[2,'Nevada'],
-  [2,'Washington'],[2,'Colorado'],[2,'Arizona'],[3,'Illinois'],[3,'Ohio'],[3,'Georgia'],[3,'Luisiana','louisiana'],[3,'Utah'],
-  [3,'Oregón'],[3,'Nuevo México','new mexico'],[3,'Kansas'],[3,'Kentucky'],[3,'Tennessee'],[3,'Virginia'],[3,'Michigan'],
-  [3,'Pensilvania','pennsylvania'],[3,'Massachusetts'],[3,'Nueva Jersey','new jersey'],[3,'Carolina del Norte','north carolina'],
-  [3,'Alabama'],[3,'Misisipi','mississippi'],[3,'Montana'],[3,'Minnesota'],[3,'Oklahoma'],[4,'Carolina del Sur','south carolina'],
-  [4,'Misuri','missouri'],[4,'Wisconsin'],[4,'Indiana'],[4,'Iowa'],[4,'Arkansas'],[4,'Nebraska'],[4,'Idaho'],[4,'Wyoming'],
-  [4,'Dakota del Norte','north dakota'],[4,'Dakota del Sur','south dakota'],[4,'Maine'],[4,'Vermont'],[4,'Connecticut'],
-  [4,'Maryland'],[5,'Nuevo Hampshire','new hampshire|nueva hampshire'],[5,'Rhode Island'],[5,'Delaware'],
+  [1,'Golden retriever','golden'],[1,'Chihuahua'],[1,'Salchicha','dachshund|teckel|perro salchicha'],[1,'Pitbull','pit bull'],[2,'Rottweiler'],
+  [2,'Dogo argentino','dogo'],[2,'Beagle'],[2,'Boxer'],[2,'Doberman'],[2,'Husky siberiano','husky'],[2,'Pug','carlino'],[2,'Border collie'],
+  [2,'Yorkshire terrier','yorkshire|yorkie'],[2,'Dálmata'],[2,'Pinscher'],[3,'Shih tzu'],[3,'Galgo'],[3,'Gran danés','dogo aleman'],
+  [3,'San Bernardo'],[3,'Cocker spaniel','cocker'],[3,'Schnauzer'],[3,'Chow chow'],[3,'Shar pei'],[3,'Akita'],[3,'Shiba inu','shiba'],
+  [3,'Maltés','bichon maltes'],[3,'Pomerania'],[3,'Pequinés'],[3,'Collie'],[3,'Fox terrier'],[3,'Jack Russell','jack russell terrier'],
+  [3,'Bull terrier'],[3,'Basset hound','basset'],[3,'Corgi'],[3,'Cane corso'],[3,'Pastor belga','malinois|pastor belga malinois'],
+  [3,'Pastor australiano','australian shepherd'],[4,'Bichón frisé','bichon'],[4,'Mastín','mastin napolitano'],[4,'Weimaraner'],[4,'Pointer'],
+  [4,'Braco'],[4,'Setter irlandés','setter'],[4,'Terranova'],[4,'Samoyedo'],[4,'Boyero de Berna','bernes de la montana|bernes'],[4,'Whippet'],
+  [4,'Alaskan malamute','malamute'],[4,'Lebrel afgano','afgano'],[4,'Fila brasileño','fila'],[4,'Dogo de Burdeos'],
+  [4,'Pastor inglés','bobtail|old english sheepdog'],[4,'Pastor de Shetland','sheltie|shetland'],[4,'West Highland','westie'],[4,'Scottish terrier'],
+  [4,'Lhasa apso'],[4,'Cavalier King Charles','cavalier'],[4,'Bloodhound','sabueso'],[4,'Staffordshire','amstaff|american staffordshire'],
+  [4,'Presa canario'],[4,'Boston terrier'],[5,'Pila argentino','pila'],[5,'Xoloitzcuintle','xolo'],[5,'Borzoi'],[5,'Basenji'],[5,'Komondor'],
+  [5,'Leonberger'],[5,'Papillón'],[5,'Saluki'],[5,'Cimarrón uruguayo','cimarron'],[5,'Airedale'],[5,'Springer spaniel'],[5,'Rhodesian ridgeback'],
+  [5,'Vizsla','braco hungaro'],[5,'Puli'],[5,'Mudi'],[5,'Kuvasz'],[5,'Labradoodle'],[5,'Pastor blanco suizo'],[5,'Collie barbudo']]}
+ , {q:'Un estado de Estados Unidos',a:[
+  [0,'California'],[0,'Texas','tejas'],[0,'Florida'],[0,'Nueva York','new york'],[1,'Hawái','hawaii'],[1,'Alaska'],[2,'Nevada'],[2,'Washington'],
+  [2,'Colorado'],[2,'Arizona'],[3,'Illinois'],[3,'Ohio'],[3,'Georgia'],[3,'Luisiana','louisiana'],[3,'Utah'],[3,'Oregón'],
+  [3,'Nuevo México','new mexico'],[3,'Kansas'],[3,'Kentucky'],[3,'Tennessee'],[3,'Virginia'],[3,'Michigan'],[3,'Pensilvania','pennsylvania'],
+  [3,'Massachusetts'],[3,'Nueva Jersey','new jersey'],[3,'Carolina del Norte','north carolina'],[3,'Alabama'],[3,'Misisipi','mississippi'],
+  [3,'Montana'],[3,'Minnesota'],[3,'Oklahoma'],[4,'Carolina del Sur','south carolina'],[4,'Misuri','missouri'],[4,'Wisconsin'],[4,'Indiana'],
+  [4,'Iowa'],[4,'Arkansas'],[4,'Nebraska'],[4,'Idaho'],[4,'Wyoming'],[4,'Dakota del Norte','north dakota'],[4,'Dakota del Sur','south dakota'],
+  [4,'Maine'],[4,'Vermont'],[4,'Connecticut'],[4,'Maryland'],[5,'Nuevo Hampshire','new hampshire|nueva hampshire'],[5,'Rhode Island'],[5,'Delaware'],
   [5,'Virginia Occidental','west virginia']]}
- ,{q:'Una luna del sistema solar',g:'esp',a:[
+ , {q:'Una luna del sistema solar',g:'esp',a:[
   [0,'Luna','la luna'],[1,'Titán'],[1,'Europa'],[2,'Ganímedes'],[2,'Ío'],[2,'Fobos','phobos'],[3,'Calisto','callisto'],[3,'Deimos'],
-  [3,'Encélado','encelado'],[3,'Caronte'],[4,'Tritón'],[4,'Mimas'],[4,'Miranda'],[5,'Titania'],[5,'Oberón'],[5,'Ariel'],
-  [5,'Umbriel'],[5,'Rea'],[5,'Jápeto'],[5,'Dione'],[5,'Tetis'],[5,'Hiperión'],[5,'Nereida'],[5,'Proteo']]}
- ,{q:'Un artista o banda de cuarteto',a:[
+  [3,'Encélado','encelado'],[3,'Caronte'],[4,'Tritón'],[4,'Mimas'],[4,'Miranda'],[5,'Titania'],[5,'Oberón'],[5,'Ariel'],[5,'Umbriel'],[5,'Rea'],
+  [5,'Jápeto'],[5,'Dione'],[5,'Tetis'],[5,'Hiperión'],[5,'Nereida'],[5,'Proteo'],[5,'Febe'],[5,'Jano'],[5,'Epimeteo'],[5,'Pan'],[5,'Atlas'],
+  [5,'Prometeo'],[5,'Pandora'],[5,'Helena'],[5,'Calipso'],[5,'Telesto'],[5,'Amaltea'],[5,'Himalia'],[5,'Tebe'],[5,'Metis'],[5,'Adrastea'],
+  [5,'Larisa'],[5,'Galatea'],[5,'Despina'],[5,'Talasa'],[5,'Náyade'],[5,'Puck'],[5,'Cordelia'],[5,'Ofelia'],[5,'Julieta'],[5,'Desdémona'],
+  [5,'Porcia'],[5,'Rosalinda'],[5,'Belinda'],[5,'Bianca'],[5,'Crésida'],[5,'Sycorax'],[5,'Nix'],[5,'Hidra'],[5,'Cerbero'],[5,'Estigia'],
+  [5,'Disnomia'],[5,'Namaka']]}
+ , {q:'Un artista o banda de cuarteto',a:[
   [0,'La Mona Jiménez','mona jimenez|mona|carlitos jimenez|carlos jimenez'],[0,'Rodrigo','el potro|rodrigo bueno|potro rodrigo'],
-  [1,'Ulises Bueno','ulises'],[1,"La K'onga",'la konga|konga'],[1,'Luck Ra','luckra'],[2,'Damián Córdoba'],[2,'La Barra'],
-  [2,"Q' Lokura",'q lokura|que locura|que lokura'],[2,'Tru-la-lá','trulala|tru la la'],[2,'Euge Quevedo','la banda de carlitos|lbc|eugenia quevedo'],
-  [3,'Chébere'],[3,'Banda XXI','banda 21'],[3,'Walter Olmos'],[3,'Jean Carlos'],[3,'Sabroso'],[3,"Dale Q' Va",'dale que va|dale q va'],
+  [1,'Ulises Bueno','ulises'],[1,'La K\'onga','la konga|konga'],[1,'Luck Ra','luckra'],[2,'Damián Córdoba'],[2,'La Barra'],
+  [2,'Q\' Lokura','q lokura|que locura|que lokura'],[2,'Tru-la-lá','trulala|tru la la'],[2,'Euge Quevedo','la banda de carlitos|lbc|eugenia quevedo'],
+  [3,'Chébere'],[3,'Banda XXI','banda 21'],[3,'Walter Olmos'],[3,'Jean Carlos'],[3,'Sabroso'],[3,'Dale Q\' Va','dale que va|dale q va'],
   [3,'Magui Olave'],[3,'Monada'],[4,'Cuarteto de Oro'],[4,'Gary'],[4,'Pelusa'],[4,'La Fiesta'],[4,'El Loco Amato','loco amato'],
-  [5,'Cuarteto Leo']]}
- ,{q:'Un país donde el español es idioma oficial',g:'pais',a:[
-  [0,'España'],[0,'México'],[0,'Argentina'],[1,'Colombia'],[1,'Chile'],[1,'Perú'],[1,'Uruguay'],[2,'Venezuela'],[2,'Ecuador'],
-  [2,'Bolivia'],[2,'Paraguay'],[2,'Cuba'],[3,'Costa Rica'],[3,'Panamá'],[3,'República Dominicana','dominicana'],[3,'Guatemala'],
-  [3,'Honduras'],[3,'El Salvador'],[3,'Nicaragua'],[5,'Guinea Ecuatorial']]}
- ,{q:'Un tipo de pasta',a:[
+  [4,'Carlitos Rolán','rolan'],[4,'Sebastián','sebastian mendoza'],[4,'Toro Quevedo'],[5,'Cuarteto Leo'],[5,'Coquito Ramaló','ramalo']]}
+ , {q:'Un país donde el español es idioma oficial',g:'pais',a:[
+  [0,'España'],[0,'México'],[0,'Argentina'],[1,'Colombia'],[1,'Chile'],[1,'Perú'],[1,'Uruguay'],[2,'Venezuela'],[2,'Ecuador'],[2,'Bolivia'],
+  [2,'Paraguay'],[2,'Cuba'],[3,'Costa Rica'],[3,'Panamá'],[3,'República Dominicana','dominicana'],[3,'Guatemala'],[3,'Honduras'],[3,'El Salvador'],
+  [3,'Nicaragua'],[5,'Guinea Ecuatorial']]}
+ , {q:'Un tipo de pasta',a:[
   [0,'Spaghetti','espagueti|espaguetis|spaghettis'],[0,'Ravioles','raviolis'],[0,'Ñoquis','gnocchi'],[1,'Tallarines'],[1,'Lasaña','lasagna'],
-  [1,'Canelones'],[2,'Sorrentinos'],[2,'Capelettis','cappelletti|capeletis|capelletis'],[2,'Moñitos','farfalle'],[2,'Mostacholes'],
-  [2,'Macarrones'],[3,'Penne','penne rigate'],[3,'Tirabuzones','fusilli|fusiles'],[3,'Agnolotis','agnolotti'],
-  [3,'Fetuccini','fettuccine|fettuccini'],[3,'Tortellini','tortelinis|tortelini'],[3,'Cintas'],[3,'Coditos'],[3,'Caracoles'],
-  [4,'Cabello de ángel'],[4,'Dedalitos'],[4,'Municiones'],[4,'Panzottis','panzotti'],[4,'Tagliatelle'],[4,'Pappardelle'],
-  [4,'Linguini','linguine'],[4,'Rigatoni'],[4,'Malfatti'],[4,'Vermicelli'],[5,'Orecchiette'],[5,'Bucatini'],[5,'Spätzle','spatzle']]}
- ,{q:'Un país de Asia',g:'pais',a:[
-  [0,'China'],[0,'Japón'],[0,'India'],[1,'Corea del Sur','corea'],[1,'Tailandia'],[2,'Vietnam'],[2,'Rusia'],[2,'Indonesia'],
-  [2,'Filipinas'],[2,'Turquía'],[2,'Israel'],[2,'Irán'],[2,'Irak','iraq'],[2,'Arabia Saudita','arabia saudi'],[2,'Corea del Norte'],
-  [3,'Pakistán','paquistan'],[3,'Afganistán'],[3,'Mongolia'],[3,'Nepal'],[3,'Malasia'],[3,'Singapur'],[3,'Catar','qatar'],
+  [1,'Canelones'],[1,'Fideos','fideo'],[2,'Sorrentinos'],[2,'Capelettis','cappelletti|capeletis|capelletis'],[2,'Moñitos','farfalle'],
+  [2,'Mostacholes'],[2,'Macarrones'],[3,'Penne','penne rigate'],[3,'Tirabuzones','fusilli|fusiles'],[3,'Agnolotis','agnolotti'],
+  [3,'Fetuccini','fettuccine|fettuccini'],[3,'Tortellini','tortelinis|tortelini'],[3,'Cintas'],[3,'Coditos'],[3,'Caracoles'],[4,'Cabello de ángel'],
+  [4,'Dedalitos'],[4,'Municiones'],[4,'Panzottis','panzotti'],[4,'Tagliatelle'],[4,'Pappardelle'],[4,'Linguini','linguine'],[4,'Rigatoni'],
+  [4,'Malfatti'],[4,'Vermicelli'],[4,'Pastina'],[4,'Letritas'],[4,'Estrellitas'],[4,'Nidos'],[4,'Conchitas','conchiglie'],[4,'Ramen'],
+  [5,'Orecchiette'],[5,'Bucatini'],[5,'Spätzle','spatzle'],[5,'Avemaría','ave maria'],[5,'Mafalda','mafaldine|reginette'],[5,'Tagliolini'],
+  [5,'Tortelloni'],[5,'Cavatelli'],[5,'Ziti'],[5,'Paccheri'],[5,'Pici'],[5,'Trofie'],[5,'Strozzapreti'],[5,'Garganelli'],[5,'Udon'],[5,'Soba']]}
+ , {q:'Un país de Asia',g:'pais',a:[
+  [0,'China'],[0,'Japón'],[0,'India'],[1,'Corea del Sur','corea'],[1,'Tailandia'],[2,'Vietnam'],[2,'Rusia'],[2,'Indonesia'],[2,'Filipinas'],
+  [2,'Turquía'],[2,'Israel'],[2,'Irán'],[2,'Irak','iraq'],[2,'Arabia Saudita','arabia saudi'],[2,'Corea del Norte'],[3,'Pakistán','paquistan'],
+  [3,'Afganistán'],[3,'Mongolia'],[3,'Nepal'],[3,'Malasia'],[3,'Singapur'],[3,'Catar','qatar'],
   [3,'Emiratos Árabes Unidos','emiratos arabes|emiratos'],[3,'Siria'],[3,'Líbano'],[3,'Jordania'],[3,'Kazajistán','kazajstan|kazakhstan'],
-  [3,'Camboya'],[4,'Bangladés','bangladesh'],[4,'Sri Lanka'],[4,'Laos'],[4,'Myanmar','birmania'],[4,'Uzbekistán'],[4,'Yemen'],
-  [4,'Omán'],[4,'Kuwait'],[4,'Georgia'],[4,'Armenia'],[4,'Azerbaiyán'],[4,'Maldivas'],[5,'Bután'],[5,'Brunéi'],
-  [5,'Timor Oriental'],[5,'Kirguistán'],[5,'Tayikistán'],[5,'Turkmenistán'],[5,'Baréin','bahrein|bahrain'],[5,'Chipre']]}
- ,{q:'Un país de Oceanía',g:'pais',a:[
-  [0,'Australia'],[0,'Nueva Zelanda','nueva zelandia'],[2,'Fiyi','fiji'],[2,'Papúa Nueva Guinea','papua'],[3,'Samoa'],[3,'Tonga'],
-  [4,'Vanuatu'],[4,'Islas Salomón','salomon'],[4,'Micronesia'],[5,'Kiribati'],[5,'Tuvalu'],[5,'Nauru'],[5,'Palaos','palau'],
-  [5,'Islas Marshall','marshall']]}
- ,{q:'Un club de fútbol de la provincia de Córdoba',g:'fut',a:[
-  [0,'Talleres'],[0,'Belgrano'],[1,'Instituto'],[2,'Racing de Córdoba','racing|racing de nueva italia'],
-  [3,'Estudiantes de Río Cuarto','estudiantes'],[4,'General Paz Juniors','juniors'],[4,'Sportivo Belgrano'],
-  [5,'Alumni de Villa María','alumni'],[5,'Las Palmas'],[5,'Argentino Peñarol','penarol'],[5,'Universitario'],
-  [5,'Atenas de Río Cuarto','atenas'],[5,'Unión San Vicente'],[5,'Huracán','huracan de barrio la france']]}
- ,{q:'Un o una tenista de Argentina',a:[
+  [3,'Camboya'],[4,'Bangladés','bangladesh'],[4,'Sri Lanka'],[4,'Laos'],[4,'Myanmar','birmania'],[4,'Uzbekistán'],[4,'Yemen'],[4,'Omán'],[4,'Kuwait'],
+  [4,'Georgia'],[4,'Armenia'],[4,'Azerbaiyán'],[4,'Maldivas'],[5,'Bután'],[5,'Brunéi'],[5,'Timor Oriental'],[5,'Kirguistán'],[5,'Tayikistán'],
+  [5,'Turkmenistán'],[5,'Baréin','bahrein|bahrain'],[5,'Chipre']]}
+ , {q:'Un país de Oceanía',g:'pais',a:[
+  [0,'Australia'],[0,'Nueva Zelanda','nueva zelandia'],[2,'Fiyi','fiji'],[2,'Papúa Nueva Guinea','papua'],[3,'Samoa'],[3,'Tonga'],[4,'Vanuatu'],
+  [4,'Islas Salomón','salomon'],[4,'Micronesia'],[5,'Kiribati'],[5,'Tuvalu'],[5,'Nauru'],[5,'Palaos','palau'],[5,'Islas Marshall','marshall']]}
+ , {q:'Un club de fútbol de la provincia de Córdoba',g:'fut',a:[
+  [0,'Talleres'],[0,'Belgrano'],[1,'Instituto'],[2,'Racing de Córdoba','racing|racing de nueva italia'],[3,'Estudiantes de Río Cuarto','estudiantes'],
+  [4,'General Paz Juniors','juniors'],[4,'Sportivo Belgrano'],[5,'Alumni de Villa María','alumni'],[5,'Las Palmas'],[5,'Argentino Peñarol','penarol'],
+  [5,'Universitario'],[5,'Atenas de Río Cuarto','atenas'],[5,'Unión San Vicente'],[5,'Huracán','huracan de barrio la france'],[5,'Barrio Parque'],
+  [5,'General Bustos'],[5,'Sarmiento de Leones'],[5,'Ascasubi'],[5,'Argentino de Monte Maíz']]}
+ , {q:'Un o una tenista de Argentina',a:[
   [0,'Guillermo Vilas','vilas'],[0,'Juan Martín del Potro','del potro|delpo'],[0,'Gabriela Sabatini','sabatini|gaby sabatini'],
   [1,'David Nalbandian','nalbandian'],[1,'Diego Schwartzman','schwartzman|peque schwartzman|peque'],[2,'Guillermo Coria','coria'],
-  [2,'Gastón Gaudio','gaudio'],[2,'Francisco Cerúndolo','cerundolo'],[3,'José Luis Clerc','clerc|batata clerc'],
-  [3,'Guillermo Cañas','canas|willy canas'],[3,'Juan Ignacio Chela','chela'],[3,'Juan Mónaco','monaco|pico monaco'],
-  [3,'Sebastián Báez','baez'],[3,'Tomás Etcheverry','etcheverry'],[3,'Nadia Podoroska','podoroska'],[3,'Gisela Dulko','dulko'],
-  [3,'Paola Suárez','suarez'],[3,'Horacio Zeballos','zeballos'],[4,'Mariano Zabaleta','zabaleta'],[4,'Mariano Puerta','puerta'],
-  [4,'Agustín Calleri','calleri'],[4,'Franco Squillari','squillari'],[4,'José Acasuso','acasuso'],[4,'Guido Pella','pella'],
-  [4,'Federico Delbonis','delbonis'],[4,'Leonardo Mayer','mayer'],[4,'Carlos Berlocq','berlocq'],[4,'Martín Jaite','jaite'],
-  [4,'Mariano Navone','navone'],[5,'Alberto Mancini','mancini'],[5,'Francisco Comesaña','comesana'],[5,'Thiago Tirante','tirante']]}
- ,{q:'Un jugador argentino campeón olímpico de básquet en Atenas 2004',a:[
+  [2,'Gastón Gaudio','gaudio'],[2,'Francisco Cerúndolo','cerundolo'],[2,'Juan Manuel Cerúndolo'],[3,'José Luis Clerc','clerc|batata clerc'],
+  [3,'Guillermo Cañas','canas|willy canas'],[3,'Juan Ignacio Chela','chela'],[3,'Juan Mónaco','monaco|pico monaco'],[3,'Sebastián Báez','baez'],
+  [3,'Tomás Etcheverry','etcheverry'],[3,'Nadia Podoroska','podoroska'],[3,'Gisela Dulko','dulko'],[3,'Paola Suárez','suarez'],
+  [3,'Horacio Zeballos','zeballos'],[3,'Pedro Cachín','cachin'],[3,'Federico Coria'],[3,'Máximo González'],[3,'Solana Sierra'],
+  [4,'Mariano Zabaleta','zabaleta'],[4,'Mariano Puerta','puerta'],[4,'Agustín Calleri','calleri'],[4,'Franco Squillari','squillari'],
+  [4,'José Acasuso','acasuso'],[4,'Guido Pella','pella'],[4,'Federico Delbonis','delbonis'],[4,'Leonardo Mayer','mayer'],
+  [4,'Carlos Berlocq','berlocq'],[4,'Martín Jaite','jaite'],[4,'Mariano Navone','navone'],[4,'Facundo Bagnis','bagnis'],
+  [4,'Camilo Ugo Carabelli','ugo carabelli|carabelli'],[4,'Andrés Molteni','molteni'],[4,'Guillermo Pérez Roldán','perez roldan'],
+  [4,'Javier Frana','frana'],[4,'Inés Gorrochategui','gorrochategui'],[4,'Florencia Labat','labat'],[4,'Lourdes Carlé','carle'],
+  [4,'Paula Ormaechea','ormaechea'],[4,'Julia Riera'],[5,'Alberto Mancini','mancini'],[5,'Francisco Comesaña','comesana'],
+  [5,'Thiago Tirante','tirante'],[5,'Marco Trungelliti','trungelliti'],[5,'Clarisa Fernández'],[5,'Patricia Tarabini','tarabini'],[5,'Mercedes Paz']]}
+ , {q:'Un jugador argentino campeón olímpico de básquet en Atenas 2004',a:[
   [0,'Emanuel Ginóbili','ginobili|manu ginobili|manu'],[0,'Luis Scola','scola'],[1,'Andrés Nocioni','nocioni|chapu nocioni|chapu'],
-  [2,'Fabricio Oberto','oberto'],[2,'Carlos Delfino','delfino'],[3,'Pepe Sánchez','sanchez|juan ignacio sanchez'],
-  [3,'Hugo Sconochini','sconochini'],[3,'Alejandro Montecchia','montecchia'],[3,'Walter Herrmann','herrmann|herrman'],
-  [4,'Rubén Wolkowyski','wolkowyski|wolkowisky'],[4,'Leonardo Gutiérrez','gutierrez|leo gutierrez'],
-  [5,'Gabriel Fernández','fernandez|gaby fernandez']]}
- ,{q:'Una marca de autos',a:[
-  [0,'Ford'],[0,'Toyota'],[0,'Chevrolet'],[0,'Fiat'],[0,'Volkswagen','vw'],[1,'Renault'],[1,'Peugeot'],[1,'BMW'],
-  [1,'Mercedes-Benz','mercedes'],[1,'Audi'],[1,'Ferrari'],[2,'Honda'],[2,'Nissan'],[2,'Citroën'],[2,'Tesla'],[2,'Porsche'],
-  [2,'Lamborghini'],[2,'Jeep'],[2,'Hyundai'],[3,'Kia'],[3,'Mazda'],[3,'Subaru'],[3,'Mitsubishi'],[3,'Suzuki'],[3,'Volvo'],
-  [3,'Alfa Romeo'],[3,'Dodge'],[3,'Mini'],[3,'Land Rover'],[3,'Jaguar'],[3,'Lexus'],[3,'Maserati'],[3,'Bugatti'],[3,'McLaren'],
-  [3,'Rolls-Royce'],[3,'Bentley'],[3,'Aston Martin'],[3,'BYD'],[4,'Chery'],[4,'Seat'],[4,'Skoda'],[4,'Opel'],[4,'Saab'],
-  [4,'Lancia'],[4,'Chrysler'],[4,'Cadillac'],[4,'Pontiac'],[4,'Lotus'],[4,'Isuzu'],[4,'Infiniti'],[4,'Pagani'],[4,'Koenigsegg'],
-  [4,'RAM'],[4,'Smart'],[5,'Buick'],[5,'Dacia'],[5,'Daihatsu'],[5,'Acura'],[5,'IKA','industrias kaiser argentina'],
+  [2,'Fabricio Oberto','oberto'],[2,'Carlos Delfino','delfino'],[3,'Pepe Sánchez','sanchez|juan ignacio sanchez'],[3,'Hugo Sconochini','sconochini'],
+  [3,'Alejandro Montecchia','montecchia'],[3,'Walter Herrmann','herrmann|herrman'],[4,'Rubén Wolkowyski','wolkowyski|wolkowisky'],
+  [4,'Leonardo Gutiérrez','gutierrez|leo gutierrez'],[5,'Gabriel Fernández','fernandez|gaby fernandez']]}
+ , {q:'Una marca de autos',a:[
+  [0,'Ford'],[0,'Toyota'],[0,'Chevrolet'],[0,'Fiat'],[0,'Volkswagen','vw'],[1,'Renault'],[1,'Peugeot'],[1,'BMW'],[1,'Mercedes-Benz','mercedes'],
+  [1,'Audi'],[1,'Ferrari'],[2,'Honda'],[2,'Nissan'],[2,'Citroën'],[2,'Tesla'],[2,'Porsche'],[2,'Lamborghini'],[2,'Jeep'],[2,'Hyundai'],[3,'Kia'],
+  [3,'Mazda'],[3,'Subaru'],[3,'Mitsubishi'],[3,'Suzuki'],[3,'Volvo'],[3,'Alfa Romeo'],[3,'Dodge'],[3,'Mini'],[3,'Land Rover'],[3,'Jaguar'],
+  [3,'Lexus'],[3,'Maserati'],[3,'Bugatti'],[3,'McLaren'],[3,'Rolls-Royce'],[3,'Bentley'],[3,'Aston Martin'],[3,'BYD'],[4,'Chery'],[4,'Seat'],
+  [4,'Skoda'],[4,'Opel'],[4,'Saab'],[4,'Lancia'],[4,'Chrysler'],[4,'Cadillac'],[4,'Pontiac'],[4,'Lotus'],[4,'Isuzu'],[4,'Infiniti'],[4,'Pagani'],
+  [4,'Koenigsegg'],[4,'RAM'],[4,'Smart'],[5,'Buick'],[5,'Dacia'],[5,'Daihatsu'],[5,'Acura'],[5,'IKA','industrias kaiser argentina'],
   [5,'Siam Di Tella','siam'],[5,'DS'],[5,'Geely'],[5,'Haval'],[5,'GMC'],[5,'Lada'],[5,'Tata'],[5,'Datsun'],[5,'Rambler']]}
- ,{q:'Una fruta',a:[
-  [0,'Manzana'],[0,'Banana','platano'],[0,'Naranja'],[1,'Frutilla','fresa'],[1,'Pera'],[1,'Uva','uvas'],[1,'Durazno','melocoton'],
-  [1,'Sandía'],[2,'Mandarina'],[2,'Limón'],[2,'Ananá','pina'],[2,'Melón'],[2,'Kiwi'],[2,'Cereza'],[2,'Ciruela'],[2,'Mango'],
-  [3,'Pomelo','toronja'],[3,'Palta','aguacate'],[3,'Arándano','arandanos'],[3,'Frambuesa'],[3,'Mora'],[3,'Damasco','albaricoque'],
-  [3,'Higo'],[3,'Coco'],[3,'Papaya','mamon'],[3,'Maracuyá','mburucuya'],[4,'Granada'],[4,'Membrillo'],[4,'Caqui'],[4,'Níspero'],
-  [4,'Lima'],[4,'Guayaba'],[4,'Tuna'],[4,'Dátil'],[4,'Pelón'],[4,'Tomate'],[5,'Quinoto','kinoto'],[5,'Lichi'],[5,'Carambola'],
-  [5,'Pitaya','fruta del dragon|pitahaya'],[5,'Grosella'],[5,'Tamarindo'],[5,'Guanábana'],[5,'Chirimoya']]}
- ,{q:'Una ciudad de Italia',a:[
-  [0,'Roma'],[0,'Milán'],[0,'Venecia'],[1,'Nápoles'],[1,'Florencia'],[1,'Turín'],[2,'Pisa'],[2,'Bolonia'],[2,'Génova'],[2,'Verona'],
-  [2,'Palermo'],[3,'Bari'],[3,'Siena'],[3,'Parma'],[3,'Módena'],[3,'Catania'],[3,'Padua'],[3,'Trieste'],[3,'Bérgamo'],
-  [4,'Perugia'],[4,'Cagliari'],[4,'Lecce'],[4,'Pompeya'],[4,'Salerno'],[4,'Rímini'],[4,'Rávena'],[4,'Como'],[4,'Udine'],
-  [4,'Brescia'],[4,'Sorrento'],[4,'Amalfi'],[4,'Messina'],[4,'Monza'],[5,'Mantua'],[5,'Ancona'],[5,'Asís'],[5,'Livorno'],
-  [5,'Reggio Calabria'],[5,'Tarento'],[5,'Lucca'],[5,'Cremona'],[5,'Ferrara'],[5,'Vicenza'],[5,'Empoli'],[5,'Sassuolo'],
-  [5,'La Spezia'],[5,'Pescara'],[5,'Matera'],[5,'San Remo','sanremo'],[5,'Treviso']]}
- ,{q:'Una de las maravillas del mundo moderno',a:[
-  [0,'Machu Picchu'],[1,'Coliseo','coliseo romano|coliseo de roma'],[1,'Cristo Redentor','cristo'],[1,'Gran Muralla China','muralla china|gran muralla'],
-  [2,'Taj Mahal'],[3,'Chichén Itzá','chichen itza'],[4,'Petra'],[5,'Pirámides de Guiza','piramides de giza|piramides de egipto|piramides|gran piramide']]}
- ,{q:'Un planeta enano',g:'esp',a:[
+ , {q:'Una fruta',g:'comida',a:[
+  [0,'Manzana'],[0,'Banana','platano'],[0,'Naranja'],[1,'Frutilla','fresa'],[1,'Pera'],[1,'Uva','uvas'],[1,'Durazno','melocoton'],[1,'Sandía'],
+  [2,'Mandarina'],[2,'Limón'],[2,'Ananá','pina'],[2,'Melón'],[2,'Kiwi'],[2,'Cereza'],[2,'Ciruela'],[2,'Mango'],[3,'Pomelo','toronja'],
+  [3,'Palta','aguacate'],[3,'Arándano','arandanos'],[3,'Frambuesa'],[3,'Mora','zarzamora'],[3,'Damasco','albaricoque'],[3,'Higo'],[3,'Coco'],
+  [3,'Papaya','mamon'],[3,'Maracuyá','mburucuya|pasionaria'],[4,'Granada'],[4,'Membrillo'],[4,'Caqui','kaki|persimon'],[4,'Níspero'],[4,'Lima'],
+  [4,'Guayaba'],[4,'Tuna'],[4,'Dátil'],[4,'Pelón','nectarina'],[4,'Tomate'],[4,'Calafate'],[5,'Quinoto','kinoto'],[5,'Lichi'],[5,'Carambola'],
+  [5,'Pitaya','fruta del dragon|pitahaya'],[5,'Grosella'],[5,'Tamarindo'],[5,'Guanábana'],[5,'Chirimoya'],[5,'Mangostán'],[5,'Rambután'],[5,'Durián'],
+  [5,'Feijoa'],[5,'Lúcuma'],[5,'Physalis','aguaymanto'],[5,'Algarroba'],[5,'Mistol'],[5,'Chañar'],[5,'Arazá'],[5,'Pitanga'],
+  [5,'Jaboticaba','yaboticaba'],[5,'Zapote'],[5,'Mamey']]}
+ , {q:'Una ciudad de Italia',a:[
+  [0,'Roma'],[0,'Milán'],[0,'Venecia'],[1,'Nápoles'],[1,'Florencia'],[1,'Turín'],[2,'Pisa'],[2,'Bolonia'],[2,'Génova'],[2,'Verona'],[2,'Palermo'],
+  [3,'Bari'],[3,'Siena'],[3,'Parma'],[3,'Módena'],[3,'Catania'],[3,'Padua'],[3,'Trieste'],[3,'Bérgamo'],[4,'Perugia'],[4,'Cagliari'],[4,'Lecce'],
+  [4,'Pompeya'],[4,'Salerno'],[4,'Rímini'],[4,'Rávena'],[4,'Como'],[4,'Udine'],[4,'Brescia'],[4,'Sorrento'],[4,'Amalfi'],[4,'Messina'],[4,'Monza'],
+  [5,'Mantua'],[5,'Ancona'],[5,'Asís'],[5,'Livorno'],[5,'Reggio Calabria'],[5,'Tarento'],[5,'Lucca'],[5,'Cremona'],[5,'Ferrara'],[5,'Vicenza'],
+  [5,'Empoli'],[5,'Sassuolo'],[5,'La Spezia'],[5,'Pescara'],[5,'Matera'],[5,'San Remo','sanremo'],[5,'Treviso']]}
+ , {q:'Una de las maravillas del mundo moderno',a:[
+  [0,'Machu Picchu'],[1,'Coliseo','coliseo romano|coliseo de roma'],[1,'Cristo Redentor','cristo'],
+  [1,'Gran Muralla China','muralla china|gran muralla'],[2,'Taj Mahal'],[3,'Chichén Itzá','chichen itza'],[4,'Petra'],
+  [5,'Pirámides de Guiza','piramides de giza|piramides de egipto|piramides|gran piramide']]}
+ , {q:'Un planeta enano',g:'esp',a:[
   [0,'Plutón'],[2,'Ceres'],[3,'Eris'],[4,'Makemake'],[5,'Haumea']]}
- ,{q:'Una constelación',g:'esp',a:[
-  [0,'Orión'],[0,'Cruz del Sur'],[1,'Osa Mayor'],[2,'Osa Menor'],[2,'Escorpio','escorpion|scorpius'],[2,'Leo'],[2,'Tauro'],
-  [2,'Géminis'],[3,'Aries'],[3,'Virgo'],[3,'Libra'],[3,'Sagitario'],[3,'Capricornio'],[3,'Acuario'],[3,'Piscis'],[3,'Cáncer'],
-  [3,'Casiopea'],[3,'Andrómeda'],[3,'Centauro','centaurus'],[3,'Pegaso'],[4,'Can Mayor'],[4,'Cisne','cygnus'],[4,'Lira'],
-  [4,'Águila'],[4,'Perseo'],[4,'Hércules'],[4,'Dragón'],[4,'Ofiuco'],[5,'Can Menor'],[5,'Hidra'],[5,'Ballena','cetus'],
-  [5,'Fénix'],[5,'Tucán'],[5,'Carina','quilla'],[5,'Vela'],[5,'Popa'],[5,'Triángulo Austral'],[5,'Erídano'],[5,'Boyero'],
-  [5,'Corona Boreal'],[5,'Cefeo'],[5,'Lobo'],[5,'Delfín']]}
- ,{q:'Una aerolínea',g:'aero',a:[
-  [0,'Aerolíneas Argentinas','aerolineas'],[1,'LATAM'],[1,'Flybondi'],[1,'American Airlines','american'],[1,'Iberia'],
-  [2,'JetSmart'],[2,'Emirates'],[2,'Air France'],[2,'Lufthansa'],[2,'Qatar Airways','qatar'],[3,'KLM'],[3,'British Airways'],
-  [3,'United','united airlines'],[3,'Delta','delta airlines'],[3,'Copa Airlines','copa'],[3,'Avianca'],[3,'Gol'],[3,'Air Europa'],
-  [3,'Turkish Airlines','turkish'],[3,'Ryanair'],[3,'Alitalia'],[3,'Aeroméxico'],[4,'LAN'],[4,'Azul'],[4,'Qantas'],[4,'Air Canada'],
-  [4,'Sky','sky airline'],[4,'Austral'],[4,'Southwest'],[4,'EasyJet'],[4,'Singapore Airlines'],[4,'Ethiopian','ethiopian airlines'],
-  [4,'Swiss'],[4,'TAP','tap portugal'],[4,'Norwegian'],[4,'Vueling'],[4,'Pan Am'],[4,'Aeroflot'],[4,'JetBlue'],[5,'ITA Airways','ita'],
-  [5,'Andes','andes lineas aereas'],[5,'LADE'],[5,'Level'],[5,'Boliviana de Aviación','boa'],[5,'Varig'],[5,'Cathay Pacific'],
-  [5,'ANA','all nippon airways'],[5,'Japan Airlines','jal'],[5,'Korean Air'],[5,'Volaris'],[5,'Spirit'],[5,'Pluna'],[5,'LAPA'],[5,'Dinar']]}
- ,{q:'Un fabricante de aviones',g:'aero',a:[
-  [0,'Boeing'],[0,'Airbus'],[1,'Embraer'],[2,'Bombardier'],[2,'Cessna'],[2,'Lockheed Martin','lockheed'],[3,'Antonov'],[3,'Piper'],
-  [3,'Fokker'],[3,'McDonnell Douglas','douglas'],[3,'Dassault'],[3,'Sukhoi'],[3,'ATR'],[4,'Mikoyan','mig'],[4,'Tupolev'],
-  [4,'Ilyushin'],[4,'Saab'],[4,'De Havilland'],[4,'Beechcraft'],[4,'Gulfstream'],[4,'Learjet'],[4,'Northrop Grumman','northrop|grumman'],
-  [4,'FAdeA','fabrica argentina de aviones|fma|fabrica militar de aviones'],[4,'Messerschmitt'],[5,'Pilatus'],[5,'Diamond'],
-  [5,'Cirrus'],[5,'Comac'],[5,'Mitsubishi'],[5,'Kawasaki'],[5,'Yakovlev'],[5,'Convair'],[5,'Hawker'],
-  [5,'British Aerospace','bae|bae systems'],[5,'Aermacchi'],[5,'Leonardo'],[5,'Pipistrel'],[5,'Tecnam'],[5,'Aero Boero'],
-  [5,'Honda','hondajet'],[5,'Textron'],[5,'Supermarine'],[5,'Junkers'],[5,'Dornier'],[5,'Curtiss']]}
- ,{q:'Una película con Ricardo Darín',a:[
-  [0,'El secreto de sus ojos'],[0,'Nueve reinas','9 reinas'],[1,'Relatos salvajes'],[1,'Argentina, 1985','argentina 85'],
-  [2,'El hijo de la novia'],[2,'Un cuento chino'],[2,'La odisea de los giles'],[3,'Carancho'],[3,'El aura'],[3,'Luna de Avellaneda'],
-  [3,'Truman'],[3,'Kamchatka'],[4,'Elefante blanco'],[4,'Tesis sobre un homicidio'],[4,'Séptimo'],[4,'La cordillera'],
-  [4,'El amor menos pensado'],[4,'Todos lo saben'],[4,'XXY'],[4,'El mismo amor, la misma lluvia'],[5,'Nieve negra'],
-  [5,'Capitán Kóblic','koblic'],[5,'El baile de la Victoria'],[5,'La señal'],[5,'Delirium'],[5,'Perdido por perdido'],[5,'Samy y yo'],
-  [5,'La educación de las hadas'],[5,'Una pistola en cada mano'],[5,'El faro']]}
- ,{q:'Un país que fue sede de un Mundial de fútbol masculino',g:'fut',a:[
-  [0,'Argentina'],[0,'Brasil'],[0,'Qatar','catar'],[1,'Rusia'],[1,'Sudáfrica'],[1,'Alemania'],[1,'México'],
-  [1,'Estados Unidos','eeuu|usa'],[1,'Uruguay'],[2,'Italia'],[2,'Francia'],[2,'España'],[2,'Canadá'],[3,'Inglaterra'],
-  [3,'Corea del Sur','corea'],[3,'Japón'],[4,'Chile'],[5,'Suiza'],[5,'Suecia']]}
- ,{q:'Un pintor o pintora famoso',a:[
-  [0,'Pablo Picasso','picasso'],[0,'Leonardo da Vinci','da vinci|leonardo'],[0,'Vincent van Gogh','van gogh'],
-  [1,'Salvador Dalí','dali'],[1,'Frida Kahlo','frida|kahlo'],[2,'Claude Monet','monet'],[2,'Miguel Ángel','michelangelo'],
-  [2,'Rembrandt'],[2,'Francisco de Goya','goya'],[2,'Diego Velázquez','velazquez'],[2,'Andy Warhol','warhol'],
-  [3,'Fernando Botero','botero'],[3,'Joan Miró','miro'],[3,'Rafael','rafael sanzio'],[3,'Gustav Klimt','klimt'],
-  [3,'Henri Matisse','matisse'],[3,'Renoir'],[3,'Paul Cézanne','cezanne'],[3,'Edvard Munch','munch'],[3,'Kandinsky'],
+ , {q:'Una constelación',g:'esp',a:[
+  [0,'Orión'],[0,'Cruz del Sur'],[1,'Osa Mayor'],[2,'Osa Menor'],[2,'Escorpio','escorpion|scorpius'],[2,'Leo'],[2,'Tauro'],[2,'Géminis'],[3,'Aries'],
+  [3,'Virgo'],[3,'Libra'],[3,'Sagitario'],[3,'Capricornio'],[3,'Acuario'],[3,'Piscis'],[3,'Cáncer'],[3,'Casiopea'],[3,'Andrómeda'],
+  [3,'Centauro','centaurus'],[3,'Pegaso'],[4,'Can Mayor'],[4,'Cisne','cygnus'],[4,'Lira'],[4,'Águila'],[4,'Perseo'],[4,'Hércules'],[4,'Dragón'],
+  [4,'Ofiuco'],[4,'Auriga'],[4,'Cuervo'],[4,'Unicornio'],[5,'Can Menor'],[5,'Hidra'],[5,'Ballena','cetus'],[5,'Fénix'],[5,'Tucán'],
+  [5,'Carina','quilla'],[5,'Vela'],[5,'Popa'],[5,'Triángulo Austral'],[5,'Erídano'],[5,'Boyero'],[5,'Corona Boreal'],[5,'Cefeo'],[5,'Lobo'],
+  [5,'Delfín'],[5,'Copa'],[5,'Jirafa'],[5,'Lince'],[5,'Lagarto'],[5,'Flecha'],[5,'Zorrillo'],[5,'Pez Volador'],[5,'Paloma'],[5,'Grulla'],[5,'Pavo'],
+  [5,'Ave del Paraíso'],[5,'Camaleón'],[5,'Mosca'],[5,'Octante'],[5,'Mesa'],[5,'Reloj'],[5,'Retículo'],[5,'Pintor'],[5,'Escultor'],[5,'Horno'],
+  [5,'Máquina Neumática'],[5,'Brújula'],[5,'Compás'],[5,'Escuadra'],[5,'Telescopio'],[5,'Microscopio'],[5,'Indio'],[5,'Sextante'],[5,'Liebre'],
+  [5,'Cabellera de Berenice'],[5,'Lebreles'],[5,'Corona Austral'],[5,'Pez Austral'],[5,'Triángulo'],[5,'Caballito'],[5,'Serpiente'],[5,'Escudo']]}
+ , {q:'Una aerolínea',g:'aero',a:[
+  [0,'Aerolíneas Argentinas','aerolineas'],[1,'LATAM'],[1,'Flybondi'],[1,'American Airlines','american'],[1,'Iberia'],[2,'JetSmart'],[2,'Emirates'],
+  [2,'Air France'],[2,'Lufthansa'],[2,'Qatar Airways','qatar'],[3,'KLM'],[3,'British Airways'],[3,'United','united airlines'],
+  [3,'Delta','delta airlines'],[3,'Copa Airlines','copa'],[3,'Avianca'],[3,'Gol'],[3,'Air Europa'],[3,'Turkish Airlines','turkish'],[3,'Ryanair'],
+  [3,'Alitalia'],[3,'Aeroméxico'],[4,'LAN'],[4,'Azul'],[4,'Qantas'],[4,'Air Canada'],[4,'Sky','sky airline'],[4,'Austral'],[4,'Southwest'],
+  [4,'EasyJet'],[4,'Singapore Airlines'],[4,'Ethiopian','ethiopian airlines'],[4,'Swiss'],[4,'TAP','tap portugal'],[4,'Norwegian'],[4,'Vueling'],
+  [4,'Pan Am'],[4,'Aeroflot'],[4,'JetBlue'],[5,'ITA Airways','ita'],[5,'Andes','andes lineas aereas'],[5,'LADE'],[5,'Level'],
+  [5,'Boliviana de Aviación','boa'],[5,'Varig'],[5,'Cathay Pacific'],[5,'ANA','all nippon airways'],[5,'Japan Airlines','jal'],[5,'Korean Air'],
+  [5,'Volaris'],[5,'Spirit'],[5,'Pluna'],[5,'LAPA'],[5,'Dinar']]}
+ , {q:'Un fabricante de aviones',g:'aero',a:[
+  [0,'Boeing'],[0,'Airbus'],[1,'Embraer'],[2,'Bombardier'],[2,'Cessna'],[2,'Lockheed Martin','lockheed'],[3,'Antonov'],[3,'Piper'],[3,'Fokker'],
+  [3,'McDonnell Douglas','douglas'],[3,'Dassault'],[3,'Sukhoi'],[3,'ATR'],[4,'Mikoyan','mig'],[4,'Tupolev'],[4,'Ilyushin'],[4,'Saab'],
+  [4,'De Havilland'],[4,'Beechcraft'],[4,'Gulfstream'],[4,'Learjet'],[4,'Northrop Grumman','northrop|grumman'],
+  [4,'FAdeA','fabrica argentina de aviones|fma|fabrica militar de aviones'],[4,'Messerschmitt'],[5,'Pilatus'],[5,'Diamond'],[5,'Cirrus'],[5,'Comac'],
+  [5,'Mitsubishi'],[5,'Kawasaki'],[5,'Yakovlev'],[5,'Convair'],[5,'Hawker'],[5,'British Aerospace','bae|bae systems'],[5,'Aermacchi'],[5,'Leonardo'],
+  [5,'Pipistrel'],[5,'Tecnam'],[5,'Aero Boero'],[5,'Honda','hondajet'],[5,'Textron'],[5,'Supermarine'],[5,'Junkers'],[5,'Dornier'],[5,'Curtiss']]}
+ , {q:'Una película con Ricardo Darín',a:[
+  [0,'El secreto de sus ojos'],[0,'Nueve reinas','9 reinas'],[1,'Relatos salvajes'],[1,'Argentina, 1985','argentina 85'],[2,'El hijo de la novia'],
+  [2,'Un cuento chino'],[2,'La odisea de los giles'],[3,'Carancho'],[3,'El aura'],[3,'Luna de Avellaneda'],[3,'Truman'],[3,'Kamchatka'],
+  [4,'Elefante blanco'],[4,'Tesis sobre un homicidio'],[4,'Séptimo'],[4,'La cordillera'],[4,'El amor menos pensado'],[4,'Todos lo saben'],[4,'XXY'],
+  [4,'El mismo amor, la misma lluvia'],[5,'Nieve negra'],[5,'Capitán Kóblic','koblic'],[5,'El baile de la Victoria'],[5,'La señal'],[5,'Delirium'],
+  [5,'Perdido por perdido'],[5,'Samy y yo'],[5,'La educación de las hadas'],[5,'Una pistola en cada mano'],[5,'El faro']]}
+ , {q:'Un país que fue sede de un Mundial de fútbol masculino',g:'fut',a:[
+  [0,'Argentina'],[0,'Brasil'],[0,'Qatar','catar'],[1,'Rusia'],[1,'Sudáfrica'],[1,'Alemania'],[1,'México'],[1,'Estados Unidos','eeuu|usa'],
+  [1,'Uruguay'],[2,'Italia'],[2,'Francia'],[2,'España'],[2,'Canadá'],[3,'Inglaterra'],[3,'Corea del Sur','corea'],[3,'Japón'],[4,'Chile'],[5,'Suiza'],
+  [5,'Suecia']]}
+ , {q:'Un pintor o pintora famoso',a:[
+  [0,'Pablo Picasso','picasso'],[0,'Leonardo da Vinci','da vinci|leonardo'],[0,'Vincent van Gogh','van gogh'],[1,'Salvador Dalí','dali'],
+  [1,'Frida Kahlo','frida|kahlo'],[2,'Claude Monet','monet'],[2,'Miguel Ángel','michelangelo'],[2,'Rembrandt'],[2,'Francisco de Goya','goya'],
+  [2,'Diego Velázquez','velazquez'],[2,'Andy Warhol','warhol'],[3,'Fernando Botero','botero'],[3,'Joan Miró','miro'],[3,'Rafael','rafael sanzio'],
+  [3,'Gustav Klimt','klimt'],[3,'Henri Matisse','matisse'],[3,'Renoir'],[3,'Paul Cézanne','cezanne'],[3,'Edvard Munch','munch'],[3,'Kandinsky'],
   [3,'Jackson Pollock','pollock'],[3,'El Greco'],[3,'Botticelli'],[3,'Vermeer'],[3,'Caravaggio'],[3,'Diego Rivera','rivera'],
-  [3,'Quinquela Martín','quinquela|benito quinquela martin'],[3,'Antonio Berni','berni'],[3,'René Magritte','magritte'],[3,'Banksy'],
-  [4,'Xul Solar'],[4,'Manet'],[4,'Gauguin'],[4,'Degas'],[4,'Rubens'],[4,'Mondrian'],[4,'Chagall'],[4,'Modigliani'],[4,'Basquiat'],
-  [4,'Edward Hopper','hopper'],[4,'El Bosco','bosch'],[4,'Toulouse-Lautrec'],[4,'Molina Campos','florencio molina campos'],
-  [4,'Marta Minujín','minujin'],[4,'Siqueiros'],[4,'Hokusai'],[5,'Turner'],[5,'Tiziano'],[5,'Durero'],[5,'Brueghel','bruegel'],
-  [5,'Giotto'],[5,'Sorolla'],[5,'Seurat'],[5,'Paul Klee','klee'],[5,'Rothko'],[5,'Spilimbergo'],[5,'Pettoruti'],[5,'Castagnino'],
-  [5,'Prilidiano Pueyrredón','pueyrredon'],[5,'Cándido López'],[5,'Tarsila do Amaral','tarsila'],[5,'Orozco'],[5,'Torres García'],
-  [5,'Guayasamín'],[5,'Remedios Varo'],[5,'Leonora Carrington','carrington'],[5,'Artemisia Gentileschi','gentileschi|artemisia'],
-  [5,'Delacroix'],[5,'Courbet'],[5,'Egon Schiele','schiele'],[5,'Francis Bacon','bacon'],[5,'Lichtenstein'],[5,'Keith Haring','haring'],
-  [5,'Malévich']]}
- ,{q:'Una moneda de algún país, actual o histórica',a:[
-  [0,'Peso'],[0,'Dólar'],[0,'Euro'],[1,'Real'],[1,'Libra','libra esterlina'],[1,'Yen'],[2,'Yuan'],[2,'Guaraní'],[2,'Sol','nuevo sol'],
-  [3,'Bolívar'],[3,'Boliviano'],[3,'Franco','franco suizo'],[3,'Rublo'],[3,'Rupia'],[3,'Lira'],[3,'Peseta'],[3,'Austral'],
-  [4,'Won'],[4,'Corona'],[4,'Dinar'],[4,'Dírham'],[4,'Rand'],[4,'Shekel','sequel'],[4,'Marco'],[4,'Rial','riyal'],[4,'Colón'],
-  [4,'Quetzal'],[4,'Córdoba'],[4,'Chelín'],[5,'Zloty'],[5,'Florín','forinto'],[5,'Baht'],[5,'Lempira'],[5,'Balboa'],[5,'Gourde'],
-  [5,'Kwanza'],[5,'Naira'],[5,'Taka'],[5,'Dong'],[5,'Ringgit'],[5,'Tenge'],[5,'Grivna'],[5,'Leu'],[5,'Lev'],[5,'Kuna']]}
- ,{q:'Un prócer o figura de la historia argentina del siglo XIX',a:[
+  [3,'Quinquela Martín','quinquela|benito quinquela martin'],[3,'Antonio Berni','berni'],[3,'René Magritte','magritte'],[3,'Banksy'],[4,'Xul Solar'],
+  [4,'Manet'],[4,'Gauguin'],[4,'Degas'],[4,'Rubens'],[4,'Mondrian'],[4,'Chagall'],[4,'Modigliani'],[4,'Basquiat'],[4,'Edward Hopper','hopper'],
+  [4,'El Bosco','bosch'],[4,'Toulouse-Lautrec'],[4,'Molina Campos','florencio molina campos'],[4,'Marta Minujín','minujin'],[4,'Siqueiros'],
+  [4,'Hokusai'],[5,'Turner'],[5,'Tiziano'],[5,'Durero'],[5,'Brueghel','bruegel'],[5,'Giotto'],[5,'Sorolla'],[5,'Seurat'],[5,'Paul Klee','klee'],
+  [5,'Rothko'],[5,'Spilimbergo'],[5,'Pettoruti'],[5,'Castagnino'],[5,'Prilidiano Pueyrredón','pueyrredon'],[5,'Cándido López'],
+  [5,'Tarsila do Amaral','tarsila'],[5,'Orozco'],[5,'Torres García'],[5,'Guayasamín'],[5,'Remedios Varo'],[5,'Leonora Carrington','carrington'],
+  [5,'Artemisia Gentileschi','gentileschi|artemisia'],[5,'Delacroix'],[5,'Courbet'],[5,'Egon Schiele','schiele'],[5,'Francis Bacon','bacon'],
+  [5,'Lichtenstein'],[5,'Keith Haring','haring'],[5,'Malévich']]}
+ , {q:'Una moneda de algún país, actual o histórica',a:[
+  [0,'Peso'],[0,'Dólar'],[0,'Euro'],[1,'Real'],[1,'Libra','libra esterlina'],[1,'Yen'],[2,'Yuan'],[2,'Guaraní'],[2,'Sol','nuevo sol'],[3,'Bolívar'],
+  [3,'Boliviano'],[3,'Franco','franco suizo'],[3,'Rublo'],[3,'Rupia'],[3,'Lira'],[3,'Peseta'],[3,'Austral'],[4,'Won'],[4,'Corona'],[4,'Dinar'],
+  [4,'Dírham'],[4,'Rand'],[4,'Shekel','sequel'],[4,'Marco'],[4,'Rial','riyal'],[4,'Colón'],[4,'Quetzal'],[4,'Córdoba'],[4,'Chelín'],[5,'Zloty'],
+  [5,'Florín','forinto'],[5,'Baht'],[5,'Lempira'],[5,'Balboa'],[5,'Gourde'],[5,'Kwanza'],[5,'Naira'],[5,'Taka'],[5,'Dong'],[5,'Ringgit'],[5,'Tenge'],
+  [5,'Grivna'],[5,'Leu'],[5,'Lev'],[5,'Kuna']]}
+ , {q:'Un prócer o figura de la historia argentina del siglo XIX',a:[
   [0,'José de San Martín','san martin'],[0,'Manuel Belgrano','belgrano'],[1,'Domingo Faustino Sarmiento','sarmiento'],
-  [1,'Martín Miguel de Güemes','guemes'],[2,'Juan Manuel de Rosas','rosas'],[2,'Mariano Moreno','moreno'],
-  [2,'Bernardino Rivadavia','rivadavia'],[2,'Cornelio Saavedra','saavedra'],[2,'Justo José de Urquiza','urquiza'],
-  [2,'Bartolomé Mitre','mitre'],[2,'Julio Argentino Roca','roca'],[3,'Juan Bautista Alberdi','alberdi'],
-  [3,'Juan José Castelli','castelli'],[3,'Guillermo Brown','brown|almirante brown'],[3,'Juana Azurduy','azurduy'],
-  [3,'Manuel Dorrego','dorrego'],[3,'Juan Lavalle','lavalle'],[3,'Facundo Quiroga','quiroga'],[3,'José Gervasio Artigas','artigas'],
-  [3,'Nicolás Avellaneda','avellaneda'],[3,'Sargento Cabral','cabral'],[4,'Juan José Paso','paso'],
+  [1,'Martín Miguel de Güemes','guemes'],[2,'Juan Manuel de Rosas','rosas'],[2,'Mariano Moreno','moreno'],[2,'Bernardino Rivadavia','rivadavia'],
+  [2,'Cornelio Saavedra','saavedra'],[2,'Justo José de Urquiza','urquiza'],[2,'Bartolomé Mitre','mitre'],[2,'Julio Argentino Roca','roca'],
+  [3,'Juan Bautista Alberdi','alberdi'],[3,'Juan José Castelli','castelli'],[3,'Guillermo Brown','brown|almirante brown'],
+  [3,'Juana Azurduy','azurduy'],[3,'Manuel Dorrego','dorrego'],[3,'Juan Lavalle','lavalle'],[3,'Facundo Quiroga','quiroga'],
+  [3,'José Gervasio Artigas','artigas'],[3,'Nicolás Avellaneda','avellaneda'],[3,'Sargento Cabral','cabral'],[4,'Juan José Paso','paso'],
   [4,'Bernardo de Monteagudo','monteagudo'],[4,'Juan Martín de Pueyrredón','pueyrredon'],[4,'Juan Gregorio de Las Heras','heras'],
-  [4,'Juan Bautista Bustos','bustos'],[4,'José María Paz','paz|manco paz'],[4,'Estanislao López','lopez'],
-  [4,'Carlos María de Alvear','alvear'],[4,'Domingo French','french'],[4,'Antonio Beruti','beruti'],
-  [4,'Francisco Narciso de Laprida','laprida'],[4,'Santiago de Liniers','liniers'],[4,'Carlos Pellegrini','pellegrini'],
-  [5,'Francisco Ramírez','ramirez|pancho ramirez'],[5,'Miguel de Azcuénaga','azcuenaga'],[5,'Juan Larrea','larrea'],
-  [5,'Domingo Matheu','matheu'],[5,'Manuel Alberti','alberti'],[5,'Hipólito Vieytes','vieytes'],
-  [5,'Remedios de Escalada'],[5,'Macacha Güemes','macacha'],[5,'María Remedios del Valle','remedios del valle'],
-  [5,'Fray Justo Santa María de Oro','santa maria de oro'],[5,'Chacho Peñaloza','penaloza|angel vicente penaloza'],
-  [5,'Santiago Derqui','derqui'],[5,'Miguel Juárez Celman','juarez celman'],[5,'Falucho']]}
- ,{q:'Una provincia o territorio de Canadá',a:[
+  [4,'Juan Bautista Bustos','bustos'],[4,'José María Paz','paz|manco paz'],[4,'Estanislao López','lopez'],[4,'Carlos María de Alvear','alvear'],
+  [4,'Domingo French','french'],[4,'Antonio Beruti','beruti'],[4,'Francisco Narciso de Laprida','laprida'],[4,'Santiago de Liniers','liniers'],
+  [4,'Carlos Pellegrini','pellegrini'],[5,'Francisco Ramírez','ramirez|pancho ramirez'],[5,'Miguel de Azcuénaga','azcuenaga'],
+  [5,'Juan Larrea','larrea'],[5,'Domingo Matheu','matheu'],[5,'Manuel Alberti','alberti'],[5,'Hipólito Vieytes','vieytes'],[5,'Remedios de Escalada'],
+  [5,'Macacha Güemes','macacha'],[5,'María Remedios del Valle','remedios del valle'],[5,'Fray Justo Santa María de Oro','santa maria de oro'],
+  [5,'Chacho Peñaloza','penaloza|angel vicente penaloza'],[5,'Santiago Derqui','derqui'],[5,'Miguel Juárez Celman','juarez celman'],[5,'Falucho']]}
+ , {q:'Una provincia o territorio de Canadá',a:[
   [0,'Ontario'],[0,'Quebec'],[1,'Columbia Británica','british columbia'],[1,'Alberta'],[3,'Manitoba'],[3,'Saskatchewan'],
-  [3,'Nueva Escocia','nova scotia'],[3,'Yukón'],[4,'Nuevo Brunswick','new brunswick'],
-  [4,'Terranova y Labrador','terranova|newfoundland|labrador'],[5,'Isla del Príncipe Eduardo','prince edward island|principe eduardo'],
-  [5,'Territorios del Noroeste','northwest territories'],[5,'Nunavut']]}
- ,{q:'Un tipo de nube',a:[
+  [3,'Nueva Escocia','nova scotia'],[3,'Yukón'],[4,'Nuevo Brunswick','new brunswick'],[4,'Terranova y Labrador','terranova|newfoundland|labrador'],
+  [5,'Isla del Príncipe Eduardo','prince edward island|principe eduardo'],[5,'Territorios del Noroeste','northwest territories'],[5,'Nunavut']]}
+ , {q:'Un tipo de nube',a:[
   [0,'Cúmulo','cumulus|cumulos'],[1,'Cumulonimbo','cumulonimbus'],[2,'Cirro','cirrus|cirros'],[2,'Estrato','stratus|estratos'],
-  [2,'Nimbo','nimbus|nimbos'],[4,'Altocúmulo','altocumulus'],[4,'Altoestrato','altostratus|altostrato'],
-  [4,'Cirrocúmulo','cirrocumulus'],[4,'Estratocúmulo','stratocumulus'],[4,'Nimboestrato','nimbostratus|nimbostrato'],
-  [5,'Cirroestrato','cirrostratus|cirrostrato']]}
- ,{q:'Un instrumento musical de viento',g:'mus',a:[
-  [0,'Flauta','flauta dulce'],[0,'Trompeta'],[1,'Saxofón','saxo'],[2,'Clarinete'],[2,'Armónica'],[2,'Trombón'],[3,'Quena'],
+  [2,'Nimbo','nimbus|nimbos'],[4,'Altocúmulo','altocumulus'],[4,'Altoestrato','altostratus|altostrato'],[4,'Cirrocúmulo','cirrocumulus'],
+  [4,'Estratocúmulo','stratocumulus'],[4,'Nimboestrato','nimbostratus|nimbostrato'],[4,'Lenticular'],[4,'Niebla'],
+  [5,'Cirroestrato','cirrostratus|cirrostrato'],[5,'Mammatus'],[5,'Pileus'],[5,'Nacarada','nubes nacaradas'],[5,'Noctilucente','noctilucentes'],
+  [5,'Arcus','nube rodillo'],[5,'Pirocúmulo']]}
+ , {q:'Un instrumento musical de viento',g:'mus',a:[
+  [0,'Flauta','flauta dulce'],[0,'Trompeta'],[1,'Saxofón','saxo'],[2,'Clarinete'],[2,'Armónica'],[2,'Trombón'],[2,'Silbato','pito'],[3,'Quena'],
   [3,'Sikus','zampona|siku|sicu'],[3,'Oboe'],[3,'Tuba'],[3,'Flauta traversa','traversa'],[3,'Gaita'],[3,'Bandoneón'],[3,'Acordeón'],
-  [4,'Fagot'],[4,'Corno','corno frances|trompa'],[4,'Ocarina'],[4,'Piccolo','flautin'],[4,'Corneta'],[4,'Melódica'],
-  [5,'Didgeridoo','diyeridu'],[5,'Erke'],[5,'Erkencho'],[5,'Pincullo','pinkillo'],[5,'Tarka'],[5,'Bombardino'],[5,'Fliscorno'],
-  [5,'Trutruca']]}
- ,{q:'Una capital de Asia',g:'pais',a:[
-  [0,'Tokio'],[0,'Pekín','beijing'],[1,'Seúl'],[1,'Bangkok'],[1,'Nueva Delhi','delhi'],[2,'Jerusalén'],[2,'Moscú'],
-  [2,'Hanói','hanoi'],[2,'Manila'],[2,'Yakarta'],[2,'Dubái','dubai'],[2,'Bagdad'],[2,'Teherán'],[2,'Kabul'],[2,'Riad'],
-  [3,'Kuala Lumpur'],[3,'Singapur'],[3,'Ankara'],[3,'Damasco'],[3,'Beirut'],[3,'Doha'],[3,'Abu Dabi','abu dhabi'],
-  [3,'Katmandú'],[3,'Islamabad'],[3,'Pionyang','pyongyang'],[3,'Taipéi','taipei'],[3,'Ulán Bator','ulan bator|ulaanbaatar'],
-  [4,'Amán'],[4,'Mascate'],[4,'Kuwait','ciudad de kuwait'],[4,'Daca','dhaka'],[4,'Colombo'],[4,'Nom Pen','phnom penh'],
-  [4,'Vientián','vientiane'],[4,'Tiflis','tbilisi'],[4,'Ereván','yerevan'],[4,'Bakú'],[4,'Astaná','astana'],
-  [4,'Taskent','tashkent'],[4,'Saná','sanaa'],[5,'Naipyidó','naypyidaw'],[5,'Timbu','thimphu'],[5,'Dusambé','dushanbe'],
-  [5,'Biskek','bishkek'],[5,'Asjabad','ashgabat'],[5,'Manama'],[5,'Dili'],[5,'Bandar Seri Begawan'],[5,'Malé']]}
- ,{q:'Un río de Europa',g:'geo',a:[
-  [0,'Sena'],[0,'Támesis'],[0,'Danubio'],[1,'Rin'],[1,'Volga'],[1,'Tíber'],[2,'Ebro'],[2,'Tajo'],[2,'Guadalquivir'],
-  [2,'Po'],[2,'Loira'],[2,'Ródano'],[3,'Duero'],[3,'Elba'],[3,'Óder','oder'],[3,'Vístula'],[3,'Dniéper','dnieper'],
-  [3,'Garona'],[3,'Arno'],[3,'Mosela'],[4,'Guadiana'],[4,'Miño'],[4,'Don'],[4,'Ural'],[4,'Dniéster','dniester'],
-  [4,'Mosa'],[4,'Escalda'],[4,'Sava'],[4,'Drava'],[5,'Segura'],[5,'Júcar'],[5,'Dvina'],[5,'Neva'],[5,'Pechora'],
-  [5,'Shannon'],[5,'Meno'],[5,'Inn'],[5,'Tisza','tisa'],[5,'Mondego']]}
- ,{q:'Una isla',g:'geo',a:[
-  [0,'Groenlandia'],[0,'Cuba'],[0,'Malvinas','islas malvinas'],[1,'Madagascar'],[1,'Sicilia'],[1,'Mallorca'],
-  [1,'Islandia'],[2,'Cerdeña'],[2,'Córcega'],[2,'Creta'],[2,'Tierra del Fuego','isla grande de tierra del fuego'],
-  [2,'Bali'],[2,'Hawái','hawaii'],[2,'Isla de Pascua','pascua|rapa nui'],[2,'Jamaica'],[2,'Puerto Rico'],[2,'Ibiza'],
-  [3,'Tenerife'],[3,'Borneo'],[3,'Sumatra'],[3,'Java'],[3,'Gran Bretaña'],[3,'Irlanda'],[3,'Tasmania'],[3,'Chiloé'],
-  [3,'Martín García'],[3,'Galápagos'],[3,'Santorini'],[3,'Capri'],[3,'Malta'],[3,'Menorca'],[3,'La Española','espanola'],
-  [4,'Nueva Guinea'],[4,'Sri Lanka'],[4,'Honshu'],[4,'Sajalín'],[4,'Isla de los Estados','de los estados'],
-  [4,'Juan Fernández','robinson crusoe'],[4,'Lanzarote'],[4,'Gran Canaria'],[4,'Chipre'],[4,'Rodas'],[4,'Zanzíbar'],
-  [4,'Trinidad'],[4,'Barbados'],[4,'Mauricio'],[5,'Baffin'],[5,'Ellesmere'],[5,'Spitsbergen','svalbard'],
-  [5,'Isla Decepción','decepcion'],[5,'Isla Marambio','marambio|seymour'],[5,'Georgias del Sur','georgias'],
-  [5,'Tristán de Acuña'],[5,'Santa Elena'],[5,'Socotra'],[5,'Hokkaido'],[5,'Kyushu'],[5,'Luzón'],[5,'Mindanao'],
+  [3,'Flauta de pan'],[4,'Fagot'],[4,'Corno','corno frances|trompa'],[4,'Ocarina'],[4,'Piccolo','flautin'],[4,'Corneta'],[4,'Melódica'],[4,'Kazoo'],
+  [4,'Cuerno'],[4,'Clarín'],[4,'Órgano'],[5,'Didgeridoo','diyeridu'],[5,'Erke'],[5,'Erkencho'],[5,'Pincullo','pinkillo'],[5,'Tarka'],[5,'Bombardino'],
+  [5,'Fliscorno'],[5,'Trutruca'],[5,'Caracola'],[5,'Sousáfono'],[5,'Bugle'],[5,'Shakuhachi'],[5,'Duduk'],[5,'Pífano'],[5,'Corno inglés'],
+  [5,'Contrafagot'],[5,'Concertina'],[5,'Quenacho']]}
+ , {q:'Una capital de Asia',g:'pais',a:[
+  [0,'Tokio'],[0,'Pekín','beijing'],[1,'Seúl'],[1,'Bangkok'],[1,'Nueva Delhi','delhi'],[2,'Jerusalén'],[2,'Moscú'],[2,'Hanói','hanoi'],[2,'Manila'],
+  [2,'Yakarta'],[2,'Dubái','dubai'],[2,'Bagdad'],[2,'Teherán'],[2,'Kabul'],[2,'Riad'],[3,'Kuala Lumpur'],[3,'Singapur'],[3,'Ankara'],[3,'Damasco'],
+  [3,'Beirut'],[3,'Doha'],[3,'Abu Dabi','abu dhabi'],[3,'Katmandú'],[3,'Islamabad'],[3,'Pionyang','pyongyang'],[3,'Taipéi','taipei'],
+  [3,'Ulán Bator','ulan bator|ulaanbaatar'],[4,'Amán'],[4,'Mascate'],[4,'Kuwait','ciudad de kuwait'],[4,'Daca','dhaka'],[4,'Colombo'],
+  [4,'Nom Pen','phnom penh'],[4,'Vientián','vientiane'],[4,'Tiflis','tbilisi'],[4,'Ereván','yerevan'],[4,'Bakú'],[4,'Astaná','astana'],
+  [4,'Taskent','tashkent'],[4,'Saná','sanaa'],[5,'Naipyidó','naypyidaw'],[5,'Timbu','thimphu'],[5,'Dusambé','dushanbe'],[5,'Biskek','bishkek'],
+  [5,'Asjabad','ashgabat'],[5,'Manama'],[5,'Dili'],[5,'Bandar Seri Begawan'],[5,'Malé']]}
+ , {q:'Un río de Europa',g:'geo',a:[
+  [0,'Sena'],[0,'Támesis'],[0,'Danubio'],[1,'Rin'],[1,'Volga'],[1,'Tíber'],[2,'Ebro'],[2,'Tajo'],[2,'Guadalquivir'],[2,'Po'],[2,'Loira'],[2,'Ródano'],
+  [3,'Duero'],[3,'Elba'],[3,'Óder','oder'],[3,'Vístula'],[3,'Dniéper','dnieper'],[3,'Garona'],[3,'Arno'],[3,'Mosela'],[4,'Guadiana'],[4,'Miño'],
+  [4,'Don'],[4,'Ural'],[4,'Dniéster','dniester'],[4,'Mosa'],[4,'Escalda'],[4,'Sava'],[4,'Drava'],[5,'Segura'],[5,'Júcar'],[5,'Dvina'],[5,'Neva'],
+  [5,'Pechora'],[5,'Shannon'],[5,'Meno'],[5,'Inn'],[5,'Tisza','tisa'],[5,'Mondego']]}
+ , {q:'Una isla',g:'geo',a:[
+  [0,'Groenlandia'],[0,'Cuba'],[0,'Malvinas','islas malvinas'],[1,'Madagascar'],[1,'Sicilia'],[1,'Mallorca'],[1,'Islandia'],[2,'Cerdeña'],
+  [2,'Córcega'],[2,'Creta'],[2,'Tierra del Fuego','isla grande de tierra del fuego'],[2,'Bali'],[2,'Hawái','hawaii'],
+  [2,'Isla de Pascua','pascua|rapa nui'],[2,'Jamaica'],[2,'Puerto Rico'],[2,'Ibiza'],[3,'Tenerife'],[3,'Borneo'],[3,'Sumatra'],[3,'Java'],
+  [3,'Gran Bretaña'],[3,'Irlanda'],[3,'Tasmania'],[3,'Chiloé'],[3,'Martín García'],[3,'Galápagos'],[3,'Santorini'],[3,'Capri'],[3,'Malta'],
+  [3,'Menorca'],[3,'La Española','espanola'],[4,'Nueva Guinea'],[4,'Sri Lanka'],[4,'Honshu'],[4,'Sajalín'],[4,'Isla de los Estados','de los estados'],
+  [4,'Juan Fernández','robinson crusoe'],[4,'Lanzarote'],[4,'Gran Canaria'],[4,'Chipre'],[4,'Rodas'],[4,'Zanzíbar'],[4,'Trinidad'],[4,'Barbados'],
+  [4,'Mauricio'],[5,'Baffin'],[5,'Ellesmere'],[5,'Spitsbergen','svalbard'],[5,'Isla Decepción','decepcion'],[5,'Isla Marambio','marambio|seymour'],
+  [5,'Georgias del Sur','georgias'],[5,'Tristán de Acuña'],[5,'Santa Elena'],[5,'Socotra'],[5,'Hokkaido'],[5,'Kyushu'],[5,'Luzón'],[5,'Mindanao'],
   [5,'Sulawesi','celebes'],[5,'Isla Navarino','navarino']]}
- ,{q:'Un océano o un mar',g:'geo',a:[
+ , {q:'Un océano o un mar',g:'geo',a:[
   [0,'Atlántico'],[0,'Pacífico'],[0,'Mediterráneo'],[1,'Índico'],[1,'Caribe'],[1,'Muerto','mar muerto'],
-  [2,'Antártico','glacial antartico|austral|oceano austral'],[2,'Ártico','glacial artico'],[2,'Rojo'],[2,'Negro'],
-  [2,'Caspio'],[2,'Argentino','mar argentino'],[3,'Báltico'],[3,'del Norte','mar del norte'],[3,'Adriático'],[3,'Egeo'],
-  [3,'Arábigo','mar de arabia'],[3,'de la China Meridional','china meridional|mar de china'],[3,'Japón','mar de japon'],
-  [3,'de Cortés','cortes|golfo de california'],[3,'Tirreno'],[4,'Jónico'],[4,'de Barents','barents'],[4,'Mar de Hoces','de hoces|pasaje de drake|drake'],
-  [4,'de Weddell','weddell'],[4,'de Ross','ross'],[4,'Amarillo'],[4,'de Bering','bering'],[4,'de Ojotsk','ojotsk|okhotsk'],
-  [4,'de Mármara','marmara'],[4,'Cantábrico'],[4,'de Coral','coral'],[4,'de Tasmania','tasmania'],[4,'Aral'],
-  [5,'de los Sargazos','sargazos'],[5,'de Azov','azov'],[5,'Blanco'],[5,'de Kara','kara'],[5,'de Láptev','laptev'],
-  [5,'de Siberia Oriental'],[5,'de Bellingshausen','bellingshausen'],[5,'de Amundsen','amundsen'],[5,'de Liguria','liguria'],
+  [2,'Antártico','glacial antartico|austral|oceano austral'],[2,'Ártico','glacial artico'],[2,'Rojo'],[2,'Negro'],[2,'Caspio'],
+  [2,'Argentino','mar argentino'],[3,'Báltico'],[3,'del Norte','mar del norte'],[3,'Adriático'],[3,'Egeo'],[3,'Arábigo','mar de arabia'],
+  [3,'de la China Meridional','china meridional|mar de china'],[3,'Japón','mar de japon'],[3,'de Cortés','cortes|golfo de california'],[3,'Tirreno'],
+  [4,'Jónico'],[4,'de Barents','barents'],[4,'Mar de Hoces','de hoces|pasaje de drake|drake'],[4,'de Weddell','weddell'],[4,'de Ross','ross'],
+  [4,'Amarillo'],[4,'de Bering','bering'],[4,'de Ojotsk','ojotsk|okhotsk'],[4,'de Mármara','marmara'],[4,'Cantábrico'],[4,'de Coral','coral'],
+  [4,'de Tasmania','tasmania'],[4,'Aral'],[5,'de los Sargazos','sargazos'],[5,'de Azov','azov'],[5,'Blanco'],[5,'de Kara','kara'],
+  [5,'de Láptev','laptev'],[5,'de Siberia Oriental'],[5,'de Bellingshausen','bellingshausen'],[5,'de Amundsen','amundsen'],[5,'de Liguria','liguria'],
   [5,'de Alborán','alboran'],[5,'Balear'],[5,'de Java'],[5,'de Banda','banda'],[5,'de Célebes'],[5,'de Arafura','arafura'],[5,'de Timor']]}
- ,{q:'Un desierto',g:'geo',a:[
-  [0,'Sahara','sahara'],[1,'Atacama'],[2,'Gobi'],[2,'Kalahari'],[3,'Sonora'],[3,'Mojave'],[3,'Arábigo','de arabia'],
-  [3,'Antártida','antartico'],[3,'Patagonia','patagonico'],[3,'Namib'],[4,'Gran Desierto de Victoria','victoria'],
-  [4,'Thar'],[4,'Taklamakán','taklamakan'],[4,'Chihuahua'],[4,'Sechura'],[4,'del Monte','monte'],[4,'Lençóis Maranhenses','lencois'],
-  [4,'Rub al-Jali','rub al jali|rub al khali'],[4,'Siria','sirio'],[4,'Karakum'],[5,'Kyzyl Kum','kyzylkum'],[5,'Danakil'],
-  [5,'Lut','dasht e lut'],[5,'Gran Cuenca'],[5,'Simpson'],[5,'Gibson'],[5,'Ténéré','tenere'],[5,'de Tabernas','tabernas'],
-  [5,'Bardenas Reales','bardenas'],[5,'Puna','puna de atacama'],[5,'Negev'],[5,'Sinaí']]}
- ,{q:'Un órgano del cuerpo humano',a:[
+ , {q:'Un desierto',g:'geo',a:[
+  [0,'Sahara','sahara'],[1,'Atacama'],[2,'Gobi'],[2,'Kalahari'],[3,'Sonora'],[3,'Mojave'],[3,'Arábigo','de arabia'],[3,'Antártida','antartico'],
+  [3,'Patagonia','patagonico'],[3,'Namib'],[4,'Gran Desierto de Victoria','victoria'],[4,'Thar'],[4,'Taklamakán','taklamakan'],[4,'Chihuahua'],
+  [4,'Sechura'],[4,'del Monte','monte'],[4,'Lençóis Maranhenses','lencois'],[4,'Rub al-Jali','rub al jali|rub al khali'],[4,'Siria','sirio'],
+  [4,'Karakum'],[5,'Kyzyl Kum','kyzylkum'],[5,'Danakil'],[5,'Lut','dasht e lut'],[5,'Gran Cuenca'],[5,'Simpson'],[5,'Gibson'],[5,'Ténéré','tenere'],
+  [5,'de Tabernas','tabernas'],[5,'Bardenas Reales','bardenas'],[5,'Puna','puna de atacama'],[5,'Negev'],[5,'Sinaí']]}
+ , {q:'Un órgano del cuerpo humano',g:'cuerpo',a:[
   [0,'Corazón'],[0,'Cerebro'],[0,'Pulmón','pulmones'],[1,'Hígado'],[1,'Riñón','rinones'],[1,'Estómago'],[1,'Piel'],
   [2,'Intestino','intestino delgado|intestino grueso|intestinos'],[2,'Páncreas'],[2,'Bazo'],[2,'Vejiga'],[2,'Ojo','ojos'],
-  [3,'Vesícula','vesicula biliar'],[3,'Tiroides'],[3,'Esófago'],[3,'Útero'],[3,'Lengua'],[3,'Laringe'],[3,'Faringe'],
-  [3,'Colon'],[3,'Ovario','ovarios'],[3,'Próstata'],[4,'Apéndice'],[4,'Tráquea'],[4,'Diafragma'],[4,'Cerebelo'],
-  [4,'Médula espinal','medula'],[4,'Testículo','testiculos'],[4,'Duodeno'],[4,'Recto'],[5,'Timo'],[5,'Hipófisis','pituitaria'],
-  [5,'Glándula pineal','pineal|epifisis'],[5,'Suprarrenal','glandula suprarrenal|suprarrenales'],[5,'Paratiroides'],
-  [5,'Íleon','ileon'],[5,'Yeyuno'],[5,'Uréter','ureter'],[5,'Hipotálamo'],[5,'Epiglotis'],[5,'Amígdala','amigdalas'],[5,'Mesenterio']]}
- ,{q:'Un insecto',a:[
-  [0,'Hormiga'],[0,'Mosca'],[0,'Mosquito'],[0,'Abeja'],[1,'Mariposa'],[1,'Cucaracha'],[1,'Grillo'],[1,'Vaquita de San Antonio','vaquita|mariquita|catarina'],
-  [2,'Avispa'],[2,'Escarabajo'],[2,'Libélula'],[2,'Saltamontes','tucura|langosta'],[2,'Luciérnaga','bicho de luz'],[2,'Pulga'],
-  [2,'Piojo'],[2,'Polilla'],[2,'Termita'],[3,'Mantis','mantis religiosa|mamboretá'],[3,'Chinche'],[3,'Cigarra','chicharra'],
-  [3,'Tábano'],[3,'Abejorro','mangangá'],[3,'Gorgojo'],[3,'Bicho palo','insecto palo'],[3,'Pulgón'],[3,'Escarabajo pelotero'],
-  [3,'Vinchuca'],[3,'Jején'],[4,'Tijereta'],[4,'Escarabajo rinoceronte'],[4,'Ciervo volante'],[4,'Efímera'],[4,'Trips'],
-  [4,'Cochinilla'],[4,'Lepisma','pececillo de plata'],[5,'Bicho canasto'],[5,'Hormiga león'],[5,'Mosca de las frutas'],
-  [5,'Crisopa'],[5,'Frigánea','friganea'],[5,'Escorpión de agua'],[5,'Zapatero'],[5,'Mosca tsetsé','tsetse']]}
- ,{q:'Un ave',a:[
-  [0,'Paloma'],[0,'Gorrión'],[0,'Loro'],[0,'Águila'],[1,'Pingüino'],[1,'Colibrí','picaflor'],[1,'Cóndor'],[1,'Búho','lechuza'],
-  [1,'Flamenco'],[1,'Hornero'],[1,'Halcón'],[2,'Tucán'],[2,'Avestruz'],[2,'Ñandú'],[2,'Cuervo'],[2,'Gaviota'],[2,'Pato'],
-  [2,'Cisne'],[2,'Pavo real'],[2,'Canario'],[2,'Carpintero','pajaro carpintero'],[2,'Pelícano'],[2,'Garza'],[2,'Cigüeña'],
-  [3,'Benteveo','bichofeo'],[3,'Tero'],[3,'Zorzal'],[3,'Calandria'],[3,'Cardenal'],[3,'Golondrina'],[3,'Jilguero'],
-  [3,'Chimango'],[3,'Carancho'],[3,'Albatros'],[3,'Kiwi'],[3,'Guacamayo'],[3,'Cotorra'],[3,'Urraca'],[3,'Petirrojo'],
-  [3,'Ruiseñor'],[3,'Buitre'],[3,'Gallina'],[3,'Pavo'],[3,'Codorniz'],[4,'Chajá'],[4,'Martín pescador'],[4,'Cuervillo'],
-  [4,'Biguá'],[4,'Macá'],[4,'Ibis'],[4,'Espátula'],[4,'Jabirú','yabiru'],[4,'Quetzal'],[4,'Ave lira'],[4,'Casuario'],
-  [4,'Frailecillo'],[4,'Cormorán'],[4,'Tordo'],[4,'Ratona'],[4,'Chingolo'],[4,'Pirincho'],[4,'Cabecita negra'],
-  [5,'Yetapá'],[5,'Siete colores'],[5,'Rey del bosque'],[5,'Suirirí'],[5,'Chuña'],[5,'Pitotoy'],[5,'Remolinera'],
-  [5,'Hoatzín'],[5,'Kakapo'],[5,'Dodo'],[5,'Chotacabras','atajacaminos'],[5,'Ostrero'],[5,'Gallareta'],[5,'Caburé']]}
- ,{q:'Una verdura u hortaliza',a:[
-  [0,'Papa'],[0,'Tomate'],[0,'Lechuga'],[0,'Zanahoria'],[1,'Cebolla'],[1,'Zapallo','calabaza'],[1,'Pimiento','morron'],
-  [1,'Espinaca'],[2,'Acelga'],[2,'Brócoli'],[2,'Zapallito','zucchini|calabacin|zapallito redondo'],[2,'Berenjena'],
-  [2,'Choclo','maiz|elote'],[2,'Pepino'],[2,'Ajo'],[2,'Batata','boniato|camote'],[2,'Coliflor'],[3,'Remolacha'],
-  [3,'Repollo','col'],[3,'Apio'],[3,'Puerro'],[3,'Rúcula'],[3,'Arvejas','guisantes|chicharos|arveja'],[3,'Chaucha','judia verde|ejote|chauchas'],
-  [3,'Rabanito','rabano'],[3,'Espárrago'],[3,'Hinojo'],[3,'Alcaucil','alcachofa'],[3,'Verdeo','cebolla de verdeo'],
-  [4,'Nabo'],[4,'Endivia'],[4,'Radicheta','radicchio'],[4,'Mandioca','yuca'],[4,'Escarola'],[4,'Repollito de Bruselas','coles de bruselas|repollitos de bruselas'],
-  [4,'Berro'],[4,'Kale'],[4,'Cardo'],[4,'Jengibre'],[4,'Echalote','chalota'],[5,'Topinambur'],[5,'Colinabo'],[5,'Chirivía'],
-  [5,'Achicoria'],[5,'Salsifí'],[5,'Ñame'],[5,'Yacón'],[5,'Oca'],[5,'Pak choi','bok choy'],[5,'Okra','quimbombo']]}
- ,{q:'Una especia, hierba o condimento',a:[
-  [0,'Sal'],[0,'Pimienta'],[0,'Orégano'],[1,'Ají molido','aji'],[1,'Pimentón'],[1,'Comino'],[1,'Canela'],[1,'Ajo'],
-  [2,'Albahaca'],[2,'Perejil'],[2,'Nuez moscada'],[2,'Laurel'],[2,'Romero'],[2,'Tomillo'],[2,'Curry'],[2,'Clavo de olor','clavo'],
-  [2,'Mostaza'],[2,'Jengibre'],[3,'Cúrcuma'],[3,'Menta'],[3,'Cilantro'],[3,'Vainilla'],[3,'Azafrán'],[3,'Estragón'],
-  [3,'Eneldo'],[3,'Ciboulette','cebollino'],[3,'Provenzal'],[3,'Peperoncino'],[3,'Salvia'],[4,'Cardamomo'],[4,'Anís','anis estrellado'],
-  [4,'Merkén'],[4,'Ajedrea'],[4,'Mejorana'],[4,'Hinojo'],[4,'Wasabi'],[4,'Páprika'],[4,'Coriandro'],[5,'Zaatar'],
-  [5,'Sumac','zumaque'],[5,'Fenogreco'],[5,'Garam masala'],[5,'Ras el hanout'],[5,'Asafétida'],[5,'Pimienta de Jamaica'],
+  [3,'Vesícula','vesicula biliar'],[3,'Tiroides'],[3,'Esófago'],[3,'Útero'],[3,'Lengua'],[3,'Laringe'],[3,'Faringe'],[3,'Colon'],
+  [3,'Ovario','ovarios'],[3,'Próstata'],[3,'Nariz'],[3,'Oído'],[4,'Apéndice'],[4,'Tráquea'],[4,'Diafragma'],[4,'Cerebelo'],
+  [4,'Médula espinal','medula'],[4,'Testículo','testiculos'],[4,'Duodeno'],[4,'Recto'],[4,'Músculo'],[4,'Médula ósea'],[4,'Pene'],[4,'Vagina'],
+  [4,'Mama'],[5,'Timo'],[5,'Hipófisis','pituitaria'],[5,'Glándula pineal','pineal|epifisis'],[5,'Suprarrenal','glandula suprarrenal|suprarrenales'],
+  [5,'Paratiroides'],[5,'Íleon','ileon'],[5,'Yeyuno'],[5,'Uréter','ureter'],[5,'Hipotálamo'],[5,'Epiglotis'],[5,'Amígdala','amigdalas'],
+  [5,'Mesenterio'],[5,'Uretra'],[5,'Trompa de Falopio'],[5,'Placenta'],[5,'Ganglio']]}
+ , {q:'Un insecto',g:'animal',a:[
+  [0,'Hormiga'],[0,'Mosca'],[0,'Mosquito'],[0,'Abeja'],[1,'Mariposa'],[1,'Cucaracha'],[1,'Grillo'],
+  [1,'Vaquita de San Antonio','vaquita|mariquita|catarina'],[2,'Avispa'],[2,'Escarabajo'],[2,'Libélula'],[2,'Saltamontes','tucura|langosta'],
+  [2,'Luciérnaga','bicho de luz'],[2,'Pulga'],[2,'Piojo'],[2,'Polilla'],[2,'Termita'],[3,'Mantis','mantis religiosa|mamboretá'],[3,'Chinche'],
+  [3,'Cigarra','chicharra'],[3,'Tábano'],[3,'Abejorro','mangangá'],[3,'Gorgojo'],[3,'Bicho palo','insecto palo'],[3,'Pulgón'],
+  [3,'Escarabajo pelotero'],[3,'Vinchuca'],[3,'Jején'],[3,'Cascarudo'],[3,'Moscardón'],[4,'Tijereta'],[4,'Escarabajo rinoceronte'],
+  [4,'Ciervo volante'],[4,'Efímera'],[4,'Trips'],[4,'Cochinilla'],[4,'Lepisma','pececillo de plata'],[4,'Isoca'],[4,'Carcoma'],[4,'Gusano de seda'],
+  [5,'Bicho canasto'],[5,'Hormiga león'],[5,'Mosca de las frutas'],[5,'Crisopa'],[5,'Frigánea','friganea'],[5,'Escorpión de agua'],[5,'Zapatero'],
+  [5,'Mosca tsetsé','tsetse'],[5,'Bicho moro'],[5,'Cantárida'],[5,'Escarabajo Hércules']]}
+ , {q:'Un ave',g:'animal',a:[
+  [0,'Paloma'],[0,'Gorrión'],[0,'Loro'],[0,'Águila'],[1,'Pingüino'],[1,'Colibrí','picaflor'],[1,'Cóndor'],[1,'Búho','lechuza'],[1,'Flamenco'],
+  [1,'Hornero'],[1,'Halcón'],[2,'Tucán'],[2,'Avestruz'],[2,'Ñandú'],[2,'Cuervo'],[2,'Gaviota'],[2,'Pato'],[2,'Cisne'],[2,'Pavo real'],[2,'Canario'],
+  [2,'Carpintero','pajaro carpintero'],[2,'Pelícano'],[2,'Garza'],[2,'Cigüeña'],[3,'Benteveo','bichofeo'],[3,'Tero'],[3,'Zorzal'],[3,'Calandria'],
+  [3,'Cardenal'],[3,'Golondrina'],[3,'Jilguero'],[3,'Chimango'],[3,'Carancho'],[3,'Albatros'],[3,'Kiwi'],[3,'Guacamayo'],[3,'Cotorra'],[3,'Urraca'],
+  [3,'Petirrojo'],[3,'Ruiseñor'],[3,'Buitre'],[3,'Gallina'],[3,'Pavo'],[3,'Codorniz'],[4,'Chajá'],[4,'Martín pescador'],[4,'Cuervillo'],[4,'Biguá'],
+  [4,'Macá'],[4,'Ibis'],[4,'Espátula'],[4,'Jabirú','yabiru'],[4,'Quetzal'],[4,'Ave lira'],[4,'Casuario'],[4,'Frailecillo'],[4,'Cormorán'],[4,'Tordo'],
+  [4,'Ratona'],[4,'Chingolo'],[4,'Pirincho'],[4,'Cabecita negra'],[5,'Yetapá'],[5,'Siete colores'],[5,'Rey del bosque'],[5,'Suirirí'],[5,'Chuña'],
+  [5,'Pitotoy'],[5,'Remolinera'],[5,'Hoatzín'],[5,'Kakapo'],[5,'Dodo'],[5,'Chotacabras','atajacaminos'],[5,'Ostrero'],[5,'Gallareta'],[5,'Caburé']]}
+ , {q:'Una verdura u hortaliza',g:'comida',a:[
+  [0,'Papa'],[0,'Tomate'],[0,'Lechuga'],[0,'Zanahoria'],[1,'Cebolla'],[1,'Zapallo','calabaza'],[1,'Pimiento','morron'],[1,'Espinaca'],[2,'Acelga'],
+  [2,'Brócoli'],[2,'Zapallito','zucchini|calabacin|zapallito redondo'],[2,'Berenjena'],[2,'Choclo','maiz|elote'],[2,'Pepino'],[2,'Ajo'],
+  [2,'Batata','boniato|camote'],[2,'Coliflor'],[3,'Remolacha'],[3,'Repollo','col'],[3,'Apio'],[3,'Puerro'],[3,'Rúcula'],
+  [3,'Arvejas','guisantes|chicharos|arveja'],[3,'Chaucha','judia verde|ejote|chauchas'],[3,'Rabanito','rabano'],[3,'Espárrago'],[3,'Hinojo'],
+  [3,'Alcaucil','alcachofa'],[3,'Verdeo','cebolla de verdeo'],[4,'Nabo'],[4,'Endivia'],[4,'Radicheta','radicchio'],[4,'Mandioca','yuca'],
+  [4,'Escarola'],[4,'Repollito de Bruselas','coles de bruselas|repollitos de bruselas'],[4,'Berro'],[4,'Kale'],[4,'Cardo'],[4,'Jengibre'],
+  [4,'Echalote','chalota'],[5,'Topinambur'],[5,'Colinabo'],[5,'Chirivía'],[5,'Achicoria'],[5,'Salsifí'],[5,'Ñame'],[5,'Yacón'],[5,'Oca'],
+  [5,'Pak choi','bok choy'],[5,'Okra','quimbombo']]}
+ , {q:'Una especia, hierba o condimento',a:[
+  [0,'Sal'],[0,'Pimienta'],[0,'Orégano'],[1,'Ají molido','aji'],[1,'Pimentón'],[1,'Comino'],[1,'Canela'],[1,'Ajo'],[2,'Albahaca'],[2,'Perejil'],
+  [2,'Nuez moscada'],[2,'Laurel'],[2,'Romero'],[2,'Tomillo'],[2,'Curry'],[2,'Clavo de olor','clavo'],[2,'Mostaza'],[2,'Jengibre'],[3,'Cúrcuma'],
+  [3,'Menta'],[3,'Cilantro'],[3,'Vainilla'],[3,'Azafrán'],[3,'Estragón'],[3,'Eneldo'],[3,'Ciboulette','cebollino'],[3,'Provenzal'],[3,'Peperoncino'],
+  [3,'Salvia'],[4,'Cardamomo'],[4,'Anís','anis estrellado'],[4,'Merkén'],[4,'Ajedrea'],[4,'Mejorana'],[4,'Hinojo'],[4,'Wasabi'],[4,'Páprika'],
+  [4,'Coriandro'],[5,'Zaatar'],[5,'Sumac','zumaque'],[5,'Fenogreco'],[5,'Garam masala'],[5,'Ras el hanout'],[5,'Asafétida'],[5,'Pimienta de Jamaica'],
   [5,'Ajenuz'],[5,'Peperina'],[5,'Poleo'],[5,'Cedrón'],[5,'Tomillo de las sierras']]}
- ,{q:'Un deporte olímpico',a:[
+ , {q:'Un deporte olímpico',a:[
   [0,'Fútbol'],[0,'Atletismo'],[0,'Natación'],[1,'Básquet','baloncesto|basquetbol'],[1,'Tenis'],[1,'Vóley','voleibol'],
-  [1,'Gimnasia','gimnasia artistica'],[2,'Hockey','hockey sobre cesped'],[2,'Boxeo'],[2,'Ciclismo'],[2,'Rugby','rugby 7'],
-  [2,'Judo'],[2,'Esgrima'],[2,'Remo'],[2,'Handball','balonmano'],[3,'Taekwondo'],[3,'Lucha'],[3,'Tiro con arco','arqueria'],
-  [3,'Halterofilia','levantamiento de pesas'],[3,'Waterpolo'],[3,'Vela'],[3,'Equitación'],[3,'Golf'],[3,'Surf'],
-  [3,'Skate','skateboarding'],[3,'Escalada','escalada deportiva'],[3,'Clavados','saltos ornamentales'],[3,'Tenis de mesa','ping pong'],
-  [3,'Bádminton'],[3,'Canotaje','piraguismo'],[3,'Triatlón'],[3,'Breaking','breakdance'],[3,'Vóley playa'],[4,'Tiro'],
-  [4,'Pentatlón moderno'],[4,'Natación artística','nado sincronizado'],[4,'Gimnasia rítmica'],[4,'Trampolín'],[4,'BMX'],
-  [4,'Esquí'],[4,'Snowboard'],[4,'Patinaje artístico'],[4,'Hockey sobre hielo'],[4,'Biatlón'],[5,'Curling'],[5,'Bobsleigh'],
-  [5,'Luge'],[5,'Skeleton'],[5,'Combinada nórdica'],[5,'Short track','patinaje de velocidad en pista corta'],[5,'Esquí de fondo']]}
- ,{q:'Una marca de celulares',a:[
-  [0,'Samsung'],[0,'Apple','iphone'],[0,'Motorola'],[1,'Xiaomi'],[2,'Huawei'],[2,'Nokia'],[2,'LG'],[3,'Sony','sony ericsson'],
-  [3,'BlackBerry'],[3,'Alcatel'],[3,'Google','pixel'],[3,'OnePlus'],[3,'Oppo'],[3,'Realme'],[3,'Honor'],[3,'TCL'],
-  [4,'Vivo'],[4,'ZTE'],[4,'Lenovo'],[4,'HTC'],[4,'Siemens'],[4,'Nothing'],[4,'Asus'],[4,'Redmi'],[4,'Poco'],[5,'Ericsson'],
-  [5,'Palm'],[5,'Infinix'],[5,'Tecno'],[5,'Meizu'],[5,'Fairphone'],[5,'Kyocera'],[5,'Philips'],[5,'Sharp'],[5,'Panasonic'],
-  [5,'Blu'],[5,'Positivo'],[5,'Noblex'],[5,'Hyundai']]}
- ,{q:'Un lenguaje de programación',a:[
-  [0,'Python'],[0,'JavaScript'],[0,'Java'],[1,'C'],[1,'C++','c mas mas|cpp'],[1,'HTML'],[2,'C#','c sharp'],[2,'PHP'],
-  [2,'SQL'],[2,'MATLAB'],[3,'Ruby'],[3,'Go','golang'],[3,'Rust'],[3,'Swift'],[3,'Kotlin'],[3,'TypeScript'],[3,'R'],
-  [3,'Fortran'],[3,'Pascal'],[3,'Visual Basic','vb'],[3,'Assembler','assembly|ensamblador'],[4,'Perl'],[4,'Lua'],[4,'Scala'],
-  [4,'Haskell'],[4,'Julia'],[4,'Dart'],[4,'COBOL'],[4,'Lisp'],[4,'Bash'],[4,'Objective-C','objective c'],[4,'Delphi'],
-  [5,'Erlang'],[5,'Elixir'],[5,'Prolog'],[5,'Ada'],[5,'Clojure'],[5,'OCaml'],[5,'Smalltalk'],[5,'Zig'],[5,'Brainfuck'],
-  [5,'Logo'],[5,'Simula'],[5,'APL'],[5,'Scratch'],[5,'Nim'],[5,'Crystal'],[5,'F#','f sharp']]}
- ,{q:'Un dios o diosa de la mitología griega',a:[
-  [0,'Zeus'],[1,'Poseidón'],[1,'Hades'],[1,'Afrodita'],[1,'Atenea'],[2,'Apolo'],[2,'Ares'],[2,'Hermes'],[2,'Hera'],
-  [2,'Artemisa'],[3,'Dionisio','dioniso'],[3,'Hefesto'],[3,'Deméter'],[3,'Cronos'],[3,'Eros'],[3,'Gea'],[3,'Perséfone'],
-  [3,'Hestia'],[4,'Urano'],[4,'Nike'],[4,'Helios'],[4,'Selene'],[4,'Eos'],[4,'Pan'],[4,'Hipnos'],[4,'Tánatos'],
-  [4,'Némesis'],[4,'Rea'],[4,'Hécate'],[4,'Tique'],[5,'Morfeo'],[5,'Nix'],[5,'Érebo'],[5,'Caos'],[5,'Iris'],[5,'Hebe'],
-  [5,'Asclepio'],[5,'Eolo'],[5,'Tetis'],[5,'Océano'],[5,'Temis'],[5,'Mnemósine'],[5,'Leto'],[5,'Febe'],[5,'Hiperión']]}
- ,{q:'Un compositor de música clásica',g:'mus',a:[
-  [0,'Mozart'],[0,'Beethoven'],[1,'Bach'],[1,'Vivaldi'],[1,'Chopin'],[2,'Tchaikovsky','chaikovski|tchaikovski'],
-  [2,'Wagner'],[2,'Verdi'],[2,'Debussy'],[2,'Strauss'],[2,'Handel','haendel|händel'],[2,'Haydn'],
-  [2,'Schubert'],[3,'Brahms'],[3,'Puccini'],[3,'Rossini'],[3,'Liszt'],[3,'Mendelssohn'],[3,'Ravel'],[3,'Stravinsky'],
-  [3,'Schumann'],[3,'Dvořák','dvorak'],[3,'Grieg'],[3,'Rachmaninov','rachmaninoff'],[3,'Mahler'],[3,'Bizet'],
-  [3,'Piazzolla'],[3,'Ginastera'],[3,'Paganini'],[3,'Pachelbel'],[4,'Satie'],[4,'Prokófiev','prokofiev'],[4,'Shostakóvich','shostakovich'],
-  [4,'Monteverdi'],[4,'Sibelius'],[4,'Mussorgsky'],[4,'Rimski-Kórsakov','rimsky korsakov'],[4,'Saint-Saëns','saint saens'],
-  [4,'Berlioz'],[4,'Bruckner'],[4,'Falla','manuel de falla'],[4,'Albéniz'],[4,'Villa-Lobos','villa lobos'],[4,'Gershwin'],
-  [4,'Fauré'],[4,'Orff'],[5,'Telemann'],[5,'Scarlatti'],[5,'Purcell'],[5,'Gluck'],[5,'Couperin'],[5,'Rameau'],[5,'Corelli'],
+  [1,'Gimnasia','gimnasia artistica'],[2,'Hockey','hockey sobre cesped'],[2,'Boxeo'],[2,'Ciclismo'],[2,'Rugby','rugby 7'],[2,'Judo'],[2,'Esgrima'],
+  [2,'Remo'],[2,'Handball','balonmano'],[3,'Taekwondo'],[3,'Lucha'],[3,'Tiro con arco','arqueria'],[3,'Halterofilia','levantamiento de pesas'],
+  [3,'Waterpolo'],[3,'Vela'],[3,'Equitación'],[3,'Golf'],[3,'Surf'],[3,'Skate','skateboarding'],[3,'Escalada','escalada deportiva'],
+  [3,'Clavados','saltos ornamentales'],[3,'Tenis de mesa','ping pong'],[3,'Bádminton'],[3,'Canotaje','piraguismo'],[3,'Triatlón'],
+  [3,'Breaking','breakdance'],[3,'Vóley playa'],[4,'Tiro'],[4,'Pentatlón moderno'],[4,'Natación artística','nado sincronizado'],
+  [4,'Gimnasia rítmica'],[4,'Trampolín'],[4,'BMX'],[4,'Esquí'],[4,'Snowboard'],[4,'Patinaje artístico'],[4,'Hockey sobre hielo'],[4,'Biatlón'],
+  [5,'Curling'],[5,'Bobsleigh'],[5,'Luge'],[5,'Skeleton'],[5,'Combinada nórdica'],[5,'Short track','patinaje de velocidad en pista corta'],
+  [5,'Esquí de fondo']]}
+ , {q:'Una marca de celulares',g:'tec',a:[
+  [0,'Samsung'],[0,'Apple','iphone'],[0,'Motorola'],[1,'Xiaomi'],[2,'Huawei'],[2,'Nokia'],[2,'LG'],[3,'Sony','sony ericsson'],[3,'BlackBerry'],
+  [3,'Alcatel'],[3,'Google','pixel'],[3,'OnePlus'],[3,'Oppo'],[3,'Realme'],[3,'Honor'],[3,'TCL'],[4,'Vivo'],[4,'ZTE'],[4,'Lenovo'],[4,'HTC'],
+  [4,'Siemens'],[4,'Nothing'],[4,'Asus'],[4,'Redmi'],[4,'Poco'],[5,'Ericsson'],[5,'Palm'],[5,'Infinix'],[5,'Tecno'],[5,'Meizu'],[5,'Fairphone'],
+  [5,'Kyocera'],[5,'Philips'],[5,'Sharp'],[5,'Panasonic'],[5,'Blu'],[5,'Positivo'],[5,'Noblex'],[5,'Hyundai']]}
+ , {q:'Un lenguaje de programación',g:'tec',a:[
+  [0,'Python'],[0,'JavaScript'],[0,'Java'],[1,'C'],[1,'C++','c mas mas|cpp'],[1,'HTML'],[2,'C#','c sharp'],[2,'PHP'],[2,'SQL'],[2,'MATLAB'],
+  [3,'Ruby'],[3,'Go','golang'],[3,'Rust'],[3,'Swift'],[3,'Kotlin'],[3,'TypeScript'],[3,'R'],[3,'Fortran'],[3,'Pascal'],[3,'Visual Basic','vb'],
+  [3,'Assembler','assembly|ensamblador'],[4,'Perl'],[4,'Lua'],[4,'Scala'],[4,'Haskell'],[4,'Julia'],[4,'Dart'],[4,'COBOL'],[4,'Lisp'],[4,'Bash'],
+  [4,'Objective-C','objective c'],[4,'Delphi'],[5,'Erlang'],[5,'Elixir'],[5,'Prolog'],[5,'Ada'],[5,'Clojure'],[5,'OCaml'],[5,'Smalltalk'],[5,'Zig'],
+  [5,'Brainfuck'],[5,'Logo'],[5,'Simula'],[5,'APL'],[5,'Scratch'],[5,'Nim'],[5,'Crystal'],[5,'F#','f sharp']]}
+ , {q:'Un dios o diosa de la mitología griega',a:[
+  [0,'Zeus'],[1,'Poseidón'],[1,'Hades'],[1,'Afrodita'],[1,'Atenea'],[2,'Apolo'],[2,'Ares'],[2,'Hermes'],[2,'Hera'],[2,'Artemisa'],
+  [3,'Dionisio','dioniso'],[3,'Hefesto'],[3,'Deméter'],[3,'Cronos'],[3,'Eros'],[3,'Gea'],[3,'Perséfone'],[3,'Hestia'],[4,'Urano'],[4,'Nike'],
+  [4,'Helios'],[4,'Selene'],[4,'Eos'],[4,'Pan'],[4,'Hipnos'],[4,'Tánatos'],[4,'Némesis'],[4,'Rea'],[4,'Hécate'],[4,'Tique'],[5,'Morfeo'],[5,'Nix'],
+  [5,'Érebo'],[5,'Caos'],[5,'Iris'],[5,'Hebe'],[5,'Asclepio'],[5,'Eolo'],[5,'Tetis'],[5,'Océano'],[5,'Temis'],[5,'Mnemósine'],[5,'Leto'],[5,'Febe'],
+  [5,'Hiperión']]}
+ , {q:'Un compositor de música clásica',g:'mus',a:[
+  [0,'Mozart'],[0,'Beethoven'],[1,'Bach'],[1,'Vivaldi'],[1,'Chopin'],[2,'Tchaikovsky','chaikovski|tchaikovski'],[2,'Wagner'],[2,'Verdi'],
+  [2,'Debussy'],[2,'Strauss'],[2,'Handel','haendel|händel'],[2,'Haydn'],[2,'Schubert'],[3,'Brahms'],[3,'Puccini'],[3,'Rossini'],[3,'Liszt'],
+  [3,'Mendelssohn'],[3,'Ravel'],[3,'Stravinsky'],[3,'Schumann'],[3,'Dvořák','dvorak'],[3,'Grieg'],[3,'Rachmaninov','rachmaninoff'],[3,'Mahler'],
+  [3,'Bizet'],[3,'Piazzolla'],[3,'Ginastera'],[3,'Paganini'],[3,'Pachelbel'],[4,'Satie'],[4,'Prokófiev','prokofiev'],
+  [4,'Shostakóvich','shostakovich'],[4,'Monteverdi'],[4,'Sibelius'],[4,'Mussorgsky'],[4,'Rimski-Kórsakov','rimsky korsakov'],
+  [4,'Saint-Saëns','saint saens'],[4,'Berlioz'],[4,'Bruckner'],[4,'Falla','manuel de falla'],[4,'Albéniz'],[4,'Villa-Lobos','villa lobos'],
+  [4,'Gershwin'],[4,'Fauré'],[4,'Orff'],[5,'Telemann'],[5,'Scarlatti'],[5,'Purcell'],[5,'Gluck'],[5,'Couperin'],[5,'Rameau'],[5,'Corelli'],
   [5,'Palestrina'],[5,'Bartók'],[5,'Schoenberg'],[5,'Webern'],[5,'Messiaen'],[5,'Glass','philip glass'],[5,'Arvo Pärt','part'],
   [5,'Alberto Williams','williams'],[5,'Carlos Guastavino','guastavino'],[5,'Granados'],[5,'Rodrigo','joaquin rodrigo']]}
- ,{q:'Un barrio de la Ciudad de Buenos Aires',a:[
-  [0,'Palermo'],[0,'La Boca','boca'],[0,'Recoleta'],[1,'San Telmo'],[1,'Belgrano'],[1,'Puerto Madero'],[1,'Caballito'],
-  [2,'Almagro'],[2,'Flores'],[2,'Villa Crespo'],[2,'Núñez'],[2,'Retiro'],[2,'Balvanera','once'],[2,'Barracas'],[2,'Colegiales'],
-  [2,'Liniers'],[2,'Boedo'],[2,'Chacarita'],[2,'Saavedra'],[2,'San Nicolás','microcentro'],[3,'Villa Urquiza'],[3,'Villa Devoto','devoto'],
-  [3,'Mataderos'],[3,'Parque Patricios'],[3,'Constitución'],[3,'Monserrat'],[3,'Coghlan'],[3,'Villa del Parque'],[3,'Floresta'],
-  [3,'Parque Chacabuco'],[3,'Pompeya','nueva pompeya'],[3,'San Cristóbal'],[3,'Agronomía'],[3,'Villa Pueyrredón'],[3,'Villa Ortúzar'],
-  [3,'Paternal','la paternal'],[3,'Villa Lugano','lugano'],[3,'Villa Luro'],[4,'Vélez Sarsfield'],[4,'Monte Castro'],[5,'Versalles'],
-  [5,'Villa Real'],[4,'Villa Santa Rita','santa rita'],[4,'Villa General Mitre'],[4,'Villa Soldati','soldati'],[4,'Villa Riachuelo'],
-  [4,'Parque Avellaneda'],[4,'Parque Chas']]}
- ,{q:'Un barrio de la ciudad de Córdoba',g:'cba',a:[
+ , {q:'Un barrio de la Ciudad de Buenos Aires',a:[
+  [0,'Palermo'],[0,'La Boca','boca'],[0,'Recoleta'],[1,'San Telmo'],[1,'Belgrano'],[1,'Puerto Madero'],[1,'Caballito'],[2,'Almagro'],[2,'Flores'],
+  [2,'Villa Crespo'],[2,'Núñez'],[2,'Retiro'],[2,'Balvanera','once'],[2,'Barracas'],[2,'Colegiales'],[2,'Liniers'],[2,'Boedo'],[2,'Chacarita'],
+  [2,'Saavedra'],[2,'San Nicolás','microcentro'],[3,'Villa Urquiza'],[3,'Villa Devoto','devoto'],[3,'Mataderos'],[3,'Parque Patricios'],
+  [3,'Constitución'],[3,'Monserrat'],[3,'Coghlan'],[3,'Villa del Parque'],[3,'Floresta'],[3,'Parque Chacabuco'],[3,'Pompeya','nueva pompeya'],
+  [3,'San Cristóbal'],[3,'Agronomía'],[3,'Villa Pueyrredón'],[3,'Villa Ortúzar'],[3,'Paternal','la paternal'],[3,'Villa Lugano','lugano'],
+  [3,'Villa Luro'],[4,'Vélez Sarsfield'],[4,'Monte Castro'],[4,'Villa Santa Rita','santa rita'],[4,'Villa General Mitre'],
+  [4,'Villa Soldati','soldati'],[4,'Villa Riachuelo'],[4,'Parque Avellaneda'],[4,'Parque Chas'],[5,'Versalles'],[5,'Villa Real']]}
+ , {q:'Un barrio de la ciudad de Córdoba',g:'cba',a:[
   [0,'Nueva Córdoba'],[0,'Centro'],[1,'Güemes'],[1,'General Paz'],[1,'Alberdi'],[2,'Cerro de las Rosas','cerro'],[2,'Barrio Jardín','jardin'],
-  [2,'Alta Córdoba'],[2,'Villa Belgrano'],[2,'San Vicente'],[2,'Arguello','argüello'],[2,'Cofico'],[3,'Observatorio'],
-  [3,'Alto Alberdi'],[3,'Barrio Juniors','juniors'],[3,'San Martín'],[3,'Urca'],[3,'Villa Cabrera'],[3,'Marqués de Sobremonte','marques'],
-  [3,'Los Boulevares','boulevares'],[3,'Pueyrredón'],[3,'Talleres','talleres oeste|talleres este'],[3,'Jardín Espinosa'],
-  [3,'Ciudad Universitaria'],[3,'Bajo Palermo'],[3,'Barrio Inglés','ingles'],[4,'Yofre','yofre norte|yofre sur'],[4,'Ampliación Las Palmas','las palmas'],
-  [4,'Maipú'],[4,'Ituzaingó'],[4,'Villa El Libertador','el libertador'],[4,'Santa Isabel'],[4,'Residencial América'],[4,'Parque Vélez Sarsfield','parque velez sarsfield'],
-  [4,'Altamira'],[4,'San Fernando'],[4,'Villa Páez','villa paez'],[4,'Providencia'],[4,'Las Rosas'],[4,'Barrio Parque Capital','parque capital'],
-  [4,'Poeta Lugones'],[4,'Matienzo'],[5,'Villa Rivera Indarte','rivera indarte'],[5,'Quebrada de las Rosas'],[5,'Los Plátanos'],[5,'Alto Verde'],
-  [5,'Bella Vista'],[5,'Müller','muller'],[5,'Granja de Funes'],[5,'Guiñazú'],[5,'Remedios de Escalada'],[5,'Ferreyra'],[5,'Villa Revol']]}
- ,{q:'Un país campeón de la Copa América',g:'fut',a:[
+  [2,'Alta Córdoba'],[2,'Villa Belgrano'],[2,'San Vicente'],[2,'Arguello','argüello'],[2,'Cofico'],[3,'Observatorio'],[3,'Alto Alberdi'],
+  [3,'Barrio Juniors','juniors'],[3,'San Martín'],[3,'Urca'],[3,'Villa Cabrera'],[3,'Marqués de Sobremonte','marques'],
+  [3,'Los Boulevares','boulevares'],[3,'Pueyrredón'],[3,'Talleres','talleres oeste|talleres este'],[3,'Jardín Espinosa'],[3,'Ciudad Universitaria'],
+  [3,'Bajo Palermo'],[3,'Barrio Inglés','ingles'],[4,'Yofre','yofre norte|yofre sur'],[4,'Ampliación Las Palmas','las palmas'],[4,'Maipú'],
+  [4,'Ituzaingó'],[4,'Villa El Libertador','el libertador'],[4,'Santa Isabel'],[4,'Residencial América'],
+  [4,'Parque Vélez Sarsfield','parque velez sarsfield'],[4,'Altamira'],[4,'San Fernando'],[4,'Villa Páez','villa paez'],[4,'Providencia'],
+  [4,'Las Rosas'],[4,'Barrio Parque Capital','parque capital'],[4,'Poeta Lugones'],[4,'Matienzo'],[5,'Villa Rivera Indarte','rivera indarte'],
+  [5,'Quebrada de las Rosas'],[5,'Los Plátanos'],[5,'Alto Verde'],[5,'Bella Vista'],[5,'Müller','muller'],[5,'Granja de Funes'],[5,'Guiñazú'],
+  [5,'Remedios de Escalada'],[5,'Ferreyra'],[5,'Villa Revol']]}
+ , {q:'Un país campeón de la Copa América',g:'fut',a:[
   [0,'Argentina'],[0,'Uruguay'],[0,'Brasil'],[1,'Chile'],[2,'Paraguay'],[2,'Perú'],[3,'Colombia'],[5,'Bolivia']]}
- ,{q:'Un premio Nobel argentino',a:[
-  [0,'Adolfo Pérez Esquivel','perez esquivel'],[1,'Luis Federico Leloir','leloir'],[1,'Bernardo Houssay','houssay'],
-  [2,'César Milstein','milstein'],[5,'Carlos Saavedra Lamas','saavedra lamas']]}
- ,{q:'Un satélite argentino',g:'esp',a:[
+ , {q:'Un premio Nobel argentino',a:[
+  [0,'Adolfo Pérez Esquivel','perez esquivel'],[1,'Luis Federico Leloir','leloir'],[1,'Bernardo Houssay','houssay'],[2,'César Milstein','milstein'],
+  [5,'Carlos Saavedra Lamas','saavedra lamas']]}
+ , {q:'Un satélite argentino',g:'esp',a:[
   [0,'ARSAT-1','arsat 1|arsat'],[1,'ARSAT-2','arsat 2'],[1,'SAOCOM 1A','saocom|saocom 1a'],[2,'SAOCOM 1B','saocom 1b'],
   [3,'SAC-D','sac d|aquarius|sac d aquarius'],[4,'SAC-C','sac c'],[4,'SAC-B','sac b'],[5,'SAC-A','sac a'],[5,'Lusat','lusat 1'],
   [5,'Pehuensat','pehuensat 1'],[5,'Cubebug','cubebug 1|cubebug 2|capitan beto'],[5,'Ñusat','nusat|satellogic']]}
- ,{q:'Una unidad del Sistema Internacional',g:'cien',a:[
-  [0,'Metro'],[0,'Kilogramo'],[0,'Segundo'],[1,'Newton'],[1,'Kelvin'],[1,'Joule','julio'],[1,'Watt','vatio'],
-  [2,'Amperio','ampere'],[2,'Voltio','volt'],[2,'Pascal'],[2,'Hertz','hercio'],[2,'Ohm','ohmio'],[3,'Mol'],[3,'Coulomb','culombio'],
-  [3,'Grado Celsius','celsius'],[3,'Candela'],[3,'Radián'],[4,'Faradio','farad'],[4,'Tesla'],[4,'Weber'],[4,'Henrio','henry'],
-  [4,'Lumen'],[4,'Lux'],[5,'Siemens'],[5,'Becquerel'],[5,'Gray'],[5,'Sievert'],[5,'Katal'],[5,'Estereorradián']]}
- ,{q:'Un avión de combate',g:'aero',a:[
-  [0,'F-16','f16'],[0,'Mirage','mirage iii|mirage 2000|mirage iiie'],[1,'Pucará','ia 58|ia-58'],[1,'F-35','f35'],
-  [1,'Spitfire'],[2,'F-22','f22|raptor'],[2,'Super Étendard','super etendard'],[2,'A-4 Skyhawk','skyhawk|a4|a 4'],
-  [2,'Pampa','ia 63|ia-63|pampa iii'],[2,'Eurofighter','typhoon'],[2,'Rafale'],[2,'Sukhoi Su-27','su 27|su-27'],[2,'MiG-29','mig 29'],
-  [2,'F-14','f14|tomcat'],[2,'F-15','f15'],[3,'F/A-18','f18|hornet|super hornet|fa 18'],[3,'Gripen'],[3,'MiG-21','mig 21'],
-  [3,'Harrier'],[3,'A-10','a10|warthog'],[3,'Zero','mitsubishi zero'],[3,'Messerschmitt Bf 109','bf 109|me 109'],[3,'P-51 Mustang','mustang|p51'],
-  [3,'Dagger','nesher'],[3,'JF-17','jf17|thunder'],[4,'Su-57','su 57'],[4,'J-20','j20'],[4,'Tornado'],[4,'Kfir'],[4,'F-4 Phantom','phantom|f4'],
-  [4,'F-86 Sabre','sabre|f86'],[4,'MiG-15','mig 15'],[4,'Su-35','su 35'],[4,'F-117','nighthawk'],[4,'SR-71','blackbird'],
-  [4,'Pulqui','pulqui ii|ia 33|pulqui i'],[5,'Gloster Meteor','meteor'],[5,'Canberra'],[5,'Hawker Hunter','hunter'],[5,'Corsair','f4u'],
-  [5,'Hellcat'],[5,'Fw 190','focke wulf'],[5,'Me 262'],[5,'Saab Viggen','viggen'],[5,'Draken'],[5,'Su-25','su 25'],[5,'Mirage F1','f1'],
-  [5,'A-37'],[5,'KAI FA-50','fa 50|fa-50'],[5,'Tejas'],[5,'Kaan']]}
- ,{q:'Un científico o científica famosa',g:'cien',a:[
+ , {q:'Una unidad del Sistema Internacional',g:'cien',a:[
+  [0,'Metro'],[0,'Kilogramo'],[0,'Segundo'],[1,'Newton'],[1,'Kelvin'],[1,'Joule','julio'],[1,'Watt','vatio'],[2,'Amperio','ampere'],
+  [2,'Voltio','volt'],[2,'Pascal'],[2,'Hertz','hercio'],[2,'Ohm','ohmio'],[3,'Mol'],[3,'Coulomb','culombio'],[3,'Grado Celsius','celsius'],
+  [3,'Candela'],[3,'Radián'],[4,'Faradio','farad'],[4,'Tesla'],[4,'Weber'],[4,'Henrio','henry'],[4,'Lumen'],[4,'Lux'],[5,'Siemens'],[5,'Becquerel'],
+  [5,'Gray'],[5,'Sievert'],[5,'Katal'],[5,'Estereorradián']]}
+ , {q:'Un avión de combate',g:'aero',a:[
+  [0,'F-16','f16'],[0,'Mirage','mirage iii|mirage 2000|mirage iiie'],[1,'Pucará','ia 58|ia-58'],[1,'F-35','f35'],[1,'Spitfire'],
+  [2,'F-22','f22|raptor'],[2,'Super Étendard','super etendard'],[2,'A-4 Skyhawk','skyhawk|a4|a 4'],[2,'Pampa','ia 63|ia-63|pampa iii'],
+  [2,'Eurofighter','typhoon'],[2,'Rafale'],[2,'Sukhoi Su-27','su 27|su-27'],[2,'MiG-29','mig 29'],[2,'F-14','f14|tomcat'],[2,'F-15','f15'],
+  [3,'F/A-18','f18|hornet|super hornet|fa 18'],[3,'Gripen'],[3,'MiG-21','mig 21'],[3,'Harrier'],[3,'A-10','a10|warthog'],[3,'Zero','mitsubishi zero'],
+  [3,'Messerschmitt Bf 109','bf 109|me 109'],[3,'P-51 Mustang','mustang|p51'],[3,'Dagger','nesher'],[3,'JF-17','jf17|thunder'],[4,'Su-57','su 57'],
+  [4,'J-20','j20'],[4,'Tornado'],[4,'Kfir'],[4,'F-4 Phantom','phantom|f4'],[4,'F-86 Sabre','sabre|f86'],[4,'MiG-15','mig 15'],[4,'Su-35','su 35'],
+  [4,'F-117','nighthawk'],[4,'SR-71','blackbird'],[4,'Pulqui','pulqui ii|ia 33|pulqui i'],[5,'Gloster Meteor','meteor'],[5,'Canberra'],
+  [5,'Hawker Hunter','hunter'],[5,'Corsair','f4u'],[5,'Hellcat'],[5,'Fw 190','focke wulf'],[5,'Me 262'],[5,'Saab Viggen','viggen'],[5,'Draken'],
+  [5,'Su-25','su 25'],[5,'Mirage F1','f1'],[5,'A-37'],[5,'KAI FA-50','fa 50|fa-50'],[5,'Tejas'],[5,'Kaan']]}
+ , {q:'Un científico o científica famosa',g:'cien',a:[
   [0,'Albert Einstein','einstein'],[0,'Isaac Newton','newton'],[1,'Marie Curie','curie|madame curie'],[1,'Charles Darwin','darwin'],
   [1,'Galileo Galilei','galileo'],[1,'Nikola Tesla','tesla'],[2,'Stephen Hawking','hawking'],[2,'Thomas Edison','edison'],
-  [2,'Louis Pasteur','pasteur'],[2,'Arquímedes'],[2,'Nicolás Copérnico','copernico'],[2,'Johannes Kepler','kepler'],
-  [2,'René Favaloro','favaloro'],[3,'Niels Bohr','bohr'],[3,'Max Planck','planck'],[3,'Michael Faraday','faraday'],
-  [3,'Alexander Fleming','fleming'],[3,'Gregor Mendel','mendel'],[3,'Werner Heisenberg','heisenberg'],[3,'Erwin Schrödinger','schrodinger'],
-  [3,'Richard Feynman','feynman'],[3,'Alan Turing','turing'],[3,'Carl Sagan','sagan'],[3,'James Clerk Maxwell','maxwell'],
-  [3,'Antoine Lavoisier','lavoisier'],[3,'Leonhard Euler','euler'],[3,'Florentino Ameghino','ameghino'],[3,'Ada Lovelace','lovelace'],
-  [3,'Robert Oppenheimer','oppenheimer'],[3,'Pitágoras'],[3,'Aristóteles'],[3,'Dmitri Mendeléyev','mendeleiev|mendeleev'],
-  [4,'Carl Friedrich Gauss','gauss'],[4,'Gottfried Leibniz','leibniz'],[4,'Ernest Rutherford','rutherford'],[4,'Enrico Fermi','fermi'],
-  [4,'Wolfgang Pauli','pauli'],[4,'Paul Dirac','dirac'],[4,'Edwin Hubble','hubble'],[4,'Robert Hooke','hooke'],[4,'Blaise Pascal','pascal'],
-  [4,'Daniel Bernoulli','bernoulli'],[4,'Rosalind Franklin','franklin'],[4,'Tycho Brahe','brahe'],[4,'Santiago Ramón y Cajal','ramon y cajal|cajal'],
-  [4,'Euclides'],[4,'Lise Meitner','meitner'],[4,'Emmy Noether','noether'],[5,'Ludwig Boltzmann','boltzmann'],[5,'Alessandro Volta','volta'],
-  [5,'André-Marie Ampère','ampere'],[5,'Heinrich Hertz','hertz'],[5,'Georg Ohm','ohm'],[5,'Ludwig Prandtl','prandtl'],
-  [5,'Theodore von Kármán','von karman|karman'],[5,'Osborne Reynolds','reynolds'],[5,'Jean-Baptiste Fourier','fourier'],
-  [5,'Pierre-Simon Laplace','laplace'],[5,'Henri Poincaré','poincare'],[5,'Srinivasa Ramanujan','ramanujan'],[5,'Hipatia'],
-  [5,'Cecilia Payne','payne'],[5,'Vera Rubin','rubin'],[5,'Chandrasekhar'],[5,'Bernardo Houssay','houssay'],[5,'Luis Leloir','leloir'],
-  [5,'Hans Bethe','bethe'],[5,'Manuel Sadosky','sadosky']]}
- ,{q:'Un juego de cartas',a:[
-  [0,'Truco'],[0,'Póker','poker'],[1,'Chinchón'],[1,'Uno'],[1,'Escoba','escoba de 15'],[2,'Solitario'],[2,'Blackjack','21|veintiuno'],
-  [2,'Burako'],[2,'Canasta'],[3,'Tute'],[3,'Mus'],[3,'Bridge'],[3,'Rummy'],[3,'Siete y medio'],[3,'Mentiroso','culo sucio|el mentiroso'],
-  [3,'Carioca'],[3,'Conga'],[4,'Pinacle'],[4,'Mau Mau'],[4,'Corazones'],[4,'Gin rummy'],[4,'Chancho va','chancho'],[4,'Casino'],
-  [4,'Golpe','el golpe'],[4,'Baccarat'],[4,'Magic','magic the gathering'],[4,'Pokémon TCG','cartas pokemon'],[5,'Brisca'],
-  [5,'Tresillo'],[5,'Cuadrilla'],[5,'Whist'],[5,'Bezique'],[5,'Spades'],[5,'Cribbage'],[5,'Pishti'],[5,'Belote']]}
- ,{q:'Una bebida con alcohol',a:[
-  [0,'Fernet'],[0,'Vino'],[0,'Cerveza'],[1,'Vodka'],[1,'Whisky'],[1,'Ron'],[1,'Tequila'],[1,'Gin','ginebra'],
-  [2,'Champagne','champan|espumante'],[2,'Sidra'],[2,'Pisco'],[2,'Caipirinha'],[2,'Mojito'],[2,'Daiquiri'],[2,'Margarita'],
-  [2,'Gancia'],[2,'Campari'],[3,'Grappa'],[3,'Sake'],[3,'Mezcal'],[3,'Cachaça'],[3,'Coñac','cognac'],[3,'Licor'],[3,'Aperol'],
-  [3,'Vermut','vermouth'],[3,'Absenta','absinthe'],[3,'Clericó'],[3,'Sangría'],[3,'Tinto de verano'],[3,'Ferroviario'],[3,'Destornillador'],
-  [3,'Piña colada'],[4,'Hidromiel'],[4,'Chicha'],[4,'Limoncello'],[4,'Amaretto'],[4,'Brandy'],[4,'Oporto'],[4,'Jerez'],
-  [4,'Calvados'],[4,'Jägermeister','jagermeister'],[4,'Pulque'],[4,'Ouzo'],[4,'Ratafía'],[4,'Cynar'],[5,'Soju'],[5,'Rakı','raki'],
-  [5,'Arak'],[5,'Pacharán'],[5,'Aguardiente'],[5,'Singani'],[5,'Caña','caña quemada'],[5,'Chartreuse'],[5,'Kirsch'],[5,'Tepache'],[5,'Mistela']]}
- ,{q:'Un idioma',a:[
-  [0,'Español','castellano'],[0,'Inglés'],[0,'Francés'],[1,'Portugués'],[1,'Italiano'],[1,'Alemán'],[1,'Chino','mandarin'],
-  [2,'Japonés'],[2,'Ruso'],[2,'Árabe'],[2,'Coreano'],[2,'Guaraní'],[2,'Quechua'],[3,'Hindi'],[3,'Catalán'],[3,'Griego'],[3,'Latín'],
-  [3,'Hebreo'],[3,'Neerlandés','holandes'],[3,'Sueco'],[3,'Turco'],[3,'Polaco'],[3,'Euskera','vasco'],[3,'Gallego'],[3,'Mapudungun','mapuche'],
-  [3,'Aimara','aymara'],[3,'Esperanto'],[4,'Noruego'],[4,'Danés'],[4,'Finés','finlandes'],[4,'Húngaro'],[4,'Checo'],[4,'Rumano'],
-  [4,'Ucraniano'],[4,'Persa','farsi'],[4,'Bengalí'],[4,'Urdu'],[4,'Tailandés'],[4,'Vietnamita'],[4,'Swahili','suajili'],[4,'Irlandés','gaelico'],
-  [4,'Galés'],[4,'Wichí'],[4,'Qom','toba'],[4,'Náhuatl'],[4,'Maya'],[4,'Islandés'],[5,'Tagalo'],[5,'Amhárico'],[5,'Yoruba'],[5,'Zulú'],
-  [5,'Malayo'],[5,'Indonesio'],[5,'Tamil'],[5,'Punjabi'],[5,'Georgiano'],[5,'Armenio'],[5,'Albanés'],[5,'Maltés'],[5,'Lituano'],[5,'Letón'],
-  [5,'Estonio'],[5,'Bretón'],[5,'Occitano'],[5,'Sardo'],[5,'Klingon'],[5,'Selk\'nam','selknam|ona'],[5,'Tehuelche','aonikenk'],[5,'Mocoví']]}
- ,{q:'Un músico o cantante de tango',g:'mus',a:[
+  [2,'Louis Pasteur','pasteur'],[2,'Arquímedes'],[2,'Nicolás Copérnico','copernico'],[2,'Johannes Kepler','kepler'],[2,'René Favaloro','favaloro'],
+  [3,'Niels Bohr','bohr'],[3,'Max Planck','planck'],[3,'Michael Faraday','faraday'],[3,'Alexander Fleming','fleming'],[3,'Gregor Mendel','mendel'],
+  [3,'Werner Heisenberg','heisenberg'],[3,'Erwin Schrödinger','schrodinger'],[3,'Richard Feynman','feynman'],[3,'Alan Turing','turing'],
+  [3,'Carl Sagan','sagan'],[3,'James Clerk Maxwell','maxwell'],[3,'Antoine Lavoisier','lavoisier'],[3,'Leonhard Euler','euler'],
+  [3,'Florentino Ameghino','ameghino'],[3,'Ada Lovelace','lovelace'],[3,'Robert Oppenheimer','oppenheimer'],[3,'Pitágoras'],[3,'Aristóteles'],
+  [3,'Dmitri Mendeléyev','mendeleiev|mendeleev'],[4,'Carl Friedrich Gauss','gauss'],[4,'Gottfried Leibniz','leibniz'],
+  [4,'Ernest Rutherford','rutherford'],[4,'Enrico Fermi','fermi'],[4,'Wolfgang Pauli','pauli'],[4,'Paul Dirac','dirac'],[4,'Edwin Hubble','hubble'],
+  [4,'Robert Hooke','hooke'],[4,'Blaise Pascal','pascal'],[4,'Daniel Bernoulli','bernoulli'],[4,'Rosalind Franklin','franklin'],
+  [4,'Tycho Brahe','brahe'],[4,'Santiago Ramón y Cajal','ramon y cajal|cajal'],[4,'Euclides'],[4,'Lise Meitner','meitner'],
+  [4,'Emmy Noether','noether'],[5,'Ludwig Boltzmann','boltzmann'],[5,'Alessandro Volta','volta'],[5,'André-Marie Ampère','ampere'],
+  [5,'Heinrich Hertz','hertz'],[5,'Georg Ohm','ohm'],[5,'Ludwig Prandtl','prandtl'],[5,'Theodore von Kármán','von karman|karman'],
+  [5,'Osborne Reynolds','reynolds'],[5,'Jean-Baptiste Fourier','fourier'],[5,'Pierre-Simon Laplace','laplace'],[5,'Henri Poincaré','poincare'],
+  [5,'Srinivasa Ramanujan','ramanujan'],[5,'Hipatia'],[5,'Cecilia Payne','payne'],[5,'Vera Rubin','rubin'],[5,'Chandrasekhar'],
+  [5,'Bernardo Houssay','houssay'],[5,'Luis Leloir','leloir'],[5,'Hans Bethe','bethe'],[5,'Manuel Sadosky','sadosky']]}
+ , {q:'Un juego de cartas',a:[
+  [0,'Truco'],[0,'Póker','poker'],[1,'Chinchón'],[1,'Uno'],[1,'Escoba','escoba de 15'],[2,'Solitario'],[2,'Blackjack','21|veintiuno'],[2,'Burako'],
+  [2,'Canasta'],[3,'Tute'],[3,'Mus'],[3,'Bridge'],[3,'Rummy'],[3,'Siete y medio'],[3,'Mentiroso','culo sucio|el mentiroso'],[3,'Carioca'],[3,'Conga'],
+  [3,'Podrida'],[3,'Guerra'],[3,'Burro'],[4,'Pinacle'],[4,'Mau Mau'],[4,'Corazones'],[4,'Gin rummy'],[4,'Chancho va','chancho'],[4,'Casino'],
+  [4,'Golpe','el golpe'],[4,'Baccarat'],[4,'Magic','magic the gathering'],[4,'Pokémon TCG','cartas pokemon'],[4,'Loba'],[4,'Solterona'],[4,'Pesca'],
+  [4,'Ocho loco'],[4,'Yu-Gi-Oh','yugioh'],[4,'Dobble'],[4,'Virus'],[5,'Brisca'],[5,'Tresillo'],[5,'Cuadrilla'],[5,'Whist'],[5,'Bezique'],[5,'Spades'],
+  [5,'Cribbage'],[5,'Pishti'],[5,'Belote'],[5,'Hearthstone'],[5,'Cuarenta'],[5,'Rentoy'],[5,'Exploding Kittens'],[5,'Hanafuda']]}
+ , {q:'Una bebida con alcohol',a:[
+  [0,'Fernet'],[0,'Vino'],[0,'Cerveza'],[1,'Vodka'],[1,'Whisky'],[1,'Ron'],[1,'Tequila'],[1,'Gin','ginebra'],[2,'Champagne','champan|espumante'],
+  [2,'Sidra'],[2,'Pisco'],[2,'Caipirinha'],[2,'Mojito'],[2,'Daiquiri'],[2,'Margarita'],[2,'Gancia'],[2,'Campari'],[3,'Grappa'],[3,'Sake'],
+  [3,'Mezcal'],[3,'Cachaça'],[3,'Coñac','cognac'],[3,'Licor'],[3,'Aperol'],[3,'Vermut','vermouth'],[3,'Absenta','absinthe'],[3,'Clericó'],
+  [3,'Sangría'],[3,'Tinto de verano'],[3,'Ferroviario'],[3,'Destornillador'],[3,'Piña colada'],[4,'Hidromiel'],[4,'Chicha'],[4,'Limoncello'],
+  [4,'Amaretto'],[4,'Brandy'],[4,'Oporto'],[4,'Jerez'],[4,'Calvados'],[4,'Jägermeister','jagermeister'],[4,'Pulque'],[4,'Ouzo'],[4,'Ratafía'],
+  [4,'Cynar'],[5,'Soju'],[5,'Rakı','raki'],[5,'Arak'],[5,'Pacharán'],[5,'Aguardiente'],[5,'Singani'],[5,'Caña','caña quemada'],[5,'Chartreuse'],
+  [5,'Kirsch'],[5,'Tepache'],[5,'Mistela']]}
+ , {q:'Un idioma',a:[
+  [0,'Español','castellano'],[0,'Inglés'],[0,'Francés'],[1,'Portugués'],[1,'Italiano'],[1,'Alemán'],[1,'Chino','mandarin'],[2,'Japonés'],[2,'Ruso'],
+  [2,'Árabe'],[2,'Coreano'],[2,'Guaraní'],[2,'Quechua'],[3,'Hindi'],[3,'Catalán'],[3,'Griego'],[3,'Latín'],[3,'Hebreo'],[3,'Neerlandés','holandes'],
+  [3,'Sueco'],[3,'Turco'],[3,'Polaco'],[3,'Euskera','vasco'],[3,'Gallego'],[3,'Mapudungun','mapuche'],[3,'Aimara','aymara'],[3,'Esperanto'],
+  [4,'Noruego'],[4,'Danés'],[4,'Finés','finlandes'],[4,'Húngaro'],[4,'Checo'],[4,'Rumano'],[4,'Ucraniano'],[4,'Persa','farsi'],[4,'Bengalí'],
+  [4,'Urdu'],[4,'Tailandés'],[4,'Vietnamita'],[4,'Swahili','suajili'],[4,'Irlandés','gaelico'],[4,'Galés'],[4,'Wichí'],[4,'Qom','toba'],[4,'Náhuatl'],
+  [4,'Maya'],[4,'Islandés'],[5,'Tagalo'],[5,'Amhárico'],[5,'Yoruba'],[5,'Zulú'],[5,'Malayo'],[5,'Indonesio'],[5,'Tamil'],[5,'Punjabi'],
+  [5,'Georgiano'],[5,'Armenio'],[5,'Albanés'],[5,'Maltés'],[5,'Lituano'],[5,'Letón'],[5,'Estonio'],[5,'Bretón'],[5,'Occitano'],[5,'Sardo'],
+  [5,'Klingon'],[5,'Selk\'nam','selknam|ona'],[5,'Tehuelche','aonikenk'],[5,'Mocoví']]}
+ , {q:'Un músico o cantante de tango',g:'mus',a:[
   [0,'Carlos Gardel','gardel'],[0,'Astor Piazzolla','piazzolla'],[1,'Aníbal Troilo','troilo|pichuco'],[2,'Julio Sosa','sosa'],
   [2,'Roberto Goyeneche','goyeneche|polaco goyeneche'],[2,'Osvaldo Pugliese','pugliese'],[2,'Juan D\'Arienzo','darienzo|d arienzo'],
   [2,'Susana Rinaldi','rinaldi'],[3,'Edmundo Rivero','rivero'],[3,'Tita Merello','merello'],[3,'Carlos Di Sarli','di sarli'],
   [3,'Mariano Mores','mores'],[3,'Libertad Lamarque','lamarque'],[3,'Adriana Varela','varela'],[3,'Horacio Salgán','salgan'],
   [3,'Francisco Canaro','canaro'],[3,'Hugo del Carril','del carril'],[3,'Bajofondo'],[3,'Gotan Project'],[4,'Alberto Castillo','castillo'],
-  [4,'Floreal Ruiz','floreal'],[4,'Ángel Vargas','vargas'],[4,'Ricardo Tanturi','tanturi'],[4,'Miguel Caló','calo'],[4,'Alfredo De Angelis','de angelis'],
-  [4,'Leopoldo Federico','federico'],[4,'Rubén Juárez','juarez'],[4,'Raúl Lavié','lavie'],[4,'Nelly Omar','nelly'],[4,'Virginia Luque','luque'],
-  [4,'Ignacio Corsini','corsini'],[4,'Enrique Santos Discépolo','discepolo'],[4,'Homero Manzi','manzi'],[5,'Agustín Magaldi','magaldi'],
-  [5,'Azucena Maizani','maizani'],[5,'Rosita Quiroga','quiroga'],[5,'Ada Falcón','falcon'],[5,'Osvaldo Fresedo','fresedo'],[5,'Pedro Laurenz','laurenz'],
-  [5,'Juan Carlos Cobián','cobian'],[5,'Ángel Villoldo','villoldo'],[5,'Eduardo Arolas','arolas'],[5,'Roberto Firpo','firpo'],
-  [5,'Juan de Dios Filiberto','filiberto'],[5,'Rodolfo Mederos','mederos'],[5,'Néstor Marconi','marconi'],[5,'Orquesta Típica Fernández Fierro','fernandez fierro']]}
- ,{q:'Una serie animada',a:[
+  [4,'Floreal Ruiz','floreal'],[4,'Ángel Vargas','vargas'],[4,'Ricardo Tanturi','tanturi'],[4,'Miguel Caló','calo'],
+  [4,'Alfredo De Angelis','de angelis'],[4,'Leopoldo Federico','federico'],[4,'Rubén Juárez','juarez'],[4,'Raúl Lavié','lavie'],
+  [4,'Nelly Omar','nelly'],[4,'Virginia Luque','luque'],[4,'Ignacio Corsini','corsini'],[4,'Enrique Santos Discépolo','discepolo'],
+  [4,'Homero Manzi','manzi'],[5,'Agustín Magaldi','magaldi'],[5,'Azucena Maizani','maizani'],[5,'Rosita Quiroga','quiroga'],[5,'Ada Falcón','falcon'],
+  [5,'Osvaldo Fresedo','fresedo'],[5,'Pedro Laurenz','laurenz'],[5,'Juan Carlos Cobián','cobian'],[5,'Ángel Villoldo','villoldo'],
+  [5,'Eduardo Arolas','arolas'],[5,'Roberto Firpo','firpo'],[5,'Juan de Dios Filiberto','filiberto'],[5,'Rodolfo Mederos','mederos'],
+  [5,'Néstor Marconi','marconi'],[5,'Orquesta Típica Fernández Fierro','fernandez fierro']]}
+ , {q:'Una serie animada',a:[
   [0,'Los Simpson','simpsons|simpson'],[0,'Dragon Ball','dragon ball z|dbz'],[1,'Bob Esponja','bob esponja'],[1,'Padre de Familia','family guy'],
-  [1,'Los Picapiedra','picapiedras'],[1,'Futurama'],[2,'Rick y Morty','rick and morty'],[2,'South Park'],[2,'Naruto'],[2,'Los Supersónicos','supersonicos'],
-  [2,'Tom y Jerry','tom and jerry'],[2,'Pokémon'],[2,'Los Caballeros del Zodíaco','caballeros del zodiaco|saint seiya'],[2,'Hora de Aventura','adventure time'],
-  [2,'Bluey'],[2,'Peppa Pig','peppa'],[3,'One Piece'],[3,'Ataque a los Titanes','attack on titan|shingeki no kyojin'],[3,'Avatar','avatar la leyenda de aang'],
-  [3,'Las Chicas Superpoderosas','chicas superpoderosas'],[3,'El Laboratorio de Dexter','dexter'],[3,'Coraje','coraje el perro cobarde'],
-  [3,'Ben 10'],[3,'Phineas y Ferb','phineas and ferb'],[3,'Bob\'s Burgers','bobs burgers'],[3,'BoJack Horseman','bojack'],
-  [3,'Death Note'],[3,'Arcane'],[3,'Los Thornberrys','thornberrys'],[3,'Hey Arnold','oye arnold'],[3,'Rugrats','aventuras en panales'],
-  [3,'Scooby-Doo','scooby doo'],[3,'Los Pitufos','pitufos'],[3,'Patoaventuras','ducktales'],[3,'Gravity Falls'],[3,'Steven Universe'],
-  [4,'Daria'],[4,'Beavis and Butt-Head','beavis'],[4,'Ed, Edd y Eddy','ed edd y eddy'],[4,'Johnny Bravo'],[4,'Samurai Jack'],
-  [4,'Invasor Zim','invader zim'],[4,'La Vaca y el Pollito','vaca y pollito'],[4,'Soy la Comadreja','comadreja'],[4,'Doug'],
-  [4,'Animaniacs'],[4,'Pinky y Cerebro','pinky y cerebro'],[4,'Neon Genesis Evangelion','evangelion'],[4,'Cowboy Bebop'],
-  [4,'Fullmetal Alchemist'],[4,'Sailor Moon'],[4,'Digimon'],[4,'Los Thundercats','thundercats'],[4,'He-Man','he man'],
-  [5,'Mafalda'],[5,'Las Aventuras de Hijitus'],[5,'Mazinger Z','mazinger'],[5,'Heidi'],[5,'Marco'],[5,'Remi'],
-  [5,'Candy Candy','candy'],[5,'Las Tortugas Ninja','tortugas ninja'],[5,'Gumball','el increible mundo de gumball'],[5,'Over the Garden Wall'],
-  [5,'Primal'],[5,'Infinity Train'],[5,'Mob Psycho 100'],[5,'Clarence'],[5,'Historias corrientes','regular show']]}
- ,{q:'Una cordillera o sierra',g:'geo',a:[
+  [1,'Los Picapiedra','picapiedras'],[1,'Futurama'],[2,'Rick y Morty','rick and morty'],[2,'South Park'],[2,'Naruto'],
+  [2,'Los Supersónicos','supersonicos'],[2,'Tom y Jerry','tom and jerry'],[2,'Pokémon'],
+  [2,'Los Caballeros del Zodíaco','caballeros del zodiaco|saint seiya'],[2,'Hora de Aventura','adventure time'],[2,'Bluey'],[2,'Peppa Pig','peppa'],
+  [3,'One Piece'],[3,'Ataque a los Titanes','attack on titan|shingeki no kyojin'],[3,'Avatar','avatar la leyenda de aang'],
+  [3,'Las Chicas Superpoderosas','chicas superpoderosas'],[3,'El Laboratorio de Dexter','dexter'],[3,'Coraje','coraje el perro cobarde'],[3,'Ben 10'],
+  [3,'Phineas y Ferb','phineas and ferb'],[3,'Bob\'s Burgers','bobs burgers'],[3,'BoJack Horseman','bojack'],[3,'Death Note'],[3,'Arcane'],
+  [3,'Los Thornberrys','thornberrys'],[3,'Hey Arnold','oye arnold'],[3,'Rugrats','aventuras en panales'],[3,'Scooby-Doo','scooby doo'],
+  [3,'Los Pitufos','pitufos'],[3,'Patoaventuras','ducktales'],[3,'Gravity Falls'],[3,'Steven Universe'],[4,'Daria'],
+  [4,'Beavis and Butt-Head','beavis'],[4,'Ed, Edd y Eddy','ed edd y eddy'],[4,'Johnny Bravo'],[4,'Samurai Jack'],[4,'Invasor Zim','invader zim'],
+  [4,'La Vaca y el Pollito','vaca y pollito'],[4,'Soy la Comadreja','comadreja'],[4,'Doug'],[4,'Animaniacs'],[4,'Pinky y Cerebro','pinky y cerebro'],
+  [4,'Neon Genesis Evangelion','evangelion'],[4,'Cowboy Bebop'],[4,'Fullmetal Alchemist'],[4,'Sailor Moon'],[4,'Digimon'],
+  [4,'Los Thundercats','thundercats'],[4,'He-Man','he man'],[5,'Mafalda'],[5,'Las Aventuras de Hijitus'],[5,'Mazinger Z','mazinger'],[5,'Heidi'],
+  [5,'Marco'],[5,'Remi'],[5,'Candy Candy','candy'],[5,'Las Tortugas Ninja','tortugas ninja'],[5,'Gumball','el increible mundo de gumball'],
+  [5,'Over the Garden Wall'],[5,'Primal'],[5,'Infinity Train'],[5,'Mob Psycho 100'],[5,'Clarence'],[5,'Historias corrientes','regular show']]}
+ , {q:'Una cordillera o sierra',g:'geo',a:[
   [0,'Los Andes','andes|cordillera de los andes'],[0,'Himalaya'],[1,'Alpes'],[1,'Pirineos'],[1,'Rocosas','montanas rocosas'],
-  [2,'Sierras de Córdoba','sierras cordobesas'],[2,'Sierra de la Ventana','ventania'],[2,'Urales'],[2,'Apeninos'],[2,'Cárpatos'],
-  [3,'Atlas'],[3,'Cáucaso'],[3,'Apalaches'],[3,'Sierra Nevada'],[3,'Sierras de San Luis'],[3,'Sierras Grandes'],[3,'Sierras Chicas'],
+  [2,'Sierras de Córdoba','sierras cordobesas'],[2,'Sierra de la Ventana','ventania'],[2,'Urales'],[2,'Apeninos'],[2,'Cárpatos'],[3,'Atlas'],
+  [3,'Cáucaso'],[3,'Apalaches'],[3,'Sierra Nevada'],[3,'Sierras de San Luis'],[3,'Sierras Grandes'],[3,'Sierras Chicas'],
   [3,'Sierra de Comechingones','comechingones'],[3,'Sierra de Tandil','tandilia'],[3,'Karakórum','karakorum'],[4,'Balcanes'],
-  [4,'Montes Escandinavos','alpes escandinavos'],[4,'Sierra Madre'],[4,'Tian Shan'],[4,'Hindu Kush'],[4,'Altái','altai'],[4,'Cordillera Cantábrica','cantabrica'],
-  [4,'Sistema Central'],[4,'Montes Zagros','zagros'],[4,'Gran Cordillera Divisoria'],[4,'Sierra de Famatina','famatina'],[4,'Sierra de Aconquija','aconquija'],
-  [4,'Cordillera Darwin','darwin'],[4,'Sierra Pie de Palo','pie de palo'],[5,'Sierras de Ambato','ambato'],[5,'Sierra de Velasco','velasco'],
-  [5,'Sierra de Ancasti','ancasti'],[5,'Sierra del Tontal','tontal'],[5,'Precordillera'],[5,'Cordillera del Viento'],[5,'Sierra de Guasayán','guasayan'],
-  [5,'Sierras Pampeanas'],[5,'Montes Drakensberg','drakensberg'],[5,'Pamir'],[5,'Montes Tatra','tatra'],[5,'Vosgos'],[5,'Jura'],[5,'Dolomitas'],
-  [5,'Montes Transantárticos','transantarticos'],[5,'Sierra de las Minas']]}
- ,{q:'Un club de fútbol de Buenos Aires (ciudad o provincia)',g:'fut',a:[
+  [4,'Montes Escandinavos','alpes escandinavos'],[4,'Sierra Madre'],[4,'Tian Shan'],[4,'Hindu Kush'],[4,'Altái','altai'],
+  [4,'Cordillera Cantábrica','cantabrica'],[4,'Sistema Central'],[4,'Montes Zagros','zagros'],[4,'Gran Cordillera Divisoria'],
+  [4,'Sierra de Famatina','famatina'],[4,'Sierra de Aconquija','aconquija'],[4,'Cordillera Darwin','darwin'],[4,'Sierra Pie de Palo','pie de palo'],
+  [5,'Sierras de Ambato','ambato'],[5,'Sierra de Velasco','velasco'],[5,'Sierra de Ancasti','ancasti'],[5,'Sierra del Tontal','tontal'],
+  [5,'Precordillera'],[5,'Cordillera del Viento'],[5,'Sierra de Guasayán','guasayan'],[5,'Sierras Pampeanas'],[5,'Montes Drakensberg','drakensberg'],
+  [5,'Pamir'],[5,'Montes Tatra','tatra'],[5,'Vosgos'],[5,'Jura'],[5,'Dolomitas'],[5,'Montes Transantárticos','transantarticos'],
+  [5,'Sierra de las Minas']]}
+ , {q:'Un club de fútbol de Buenos Aires (ciudad o provincia)',g:'fut',a:[
   [0,'Boca Juniors','boca'],[0,'River Plate','river'],[1,'Racing','racing club'],[1,'Independiente'],[1,'San Lorenzo'],[2,'Huracán'],
   [2,'Vélez','velez sarsfield'],[2,'Estudiantes','estudiantes de la plata'],[2,'Gimnasia','gimnasia y esgrima de la plata|gimnasia la plata'],
   [2,'Lanús'],[2,'Banfield'],[2,'Argentinos Juniors','argentinos'],[3,'Ferro','ferro carril oeste'],[3,'Platense'],[3,'Tigre'],
   [3,'Arsenal','arsenal de sarandi'],[3,'Quilmes'],[3,'Chacarita','chacarita juniors'],[3,'All Boys'],[3,'Atlanta'],[3,'Defensa y Justicia'],
-  [3,'Nueva Chicago'],[3,'Barracas Central'],[3,'Aldosivi'],[3,'Temperley'],[3,'Los Andes'],[3,'Almagro'],[3,'Morón','deportivo moron'],
-  [3,'Olimpo'],[4,'Talleres de Remedios de Escalada','talleres de escalada'],[4,'Deportivo Riestra','riestra'],[4,'Sacachispas'],
-  [4,'Excursionistas'],[4,'Comunicaciones'],[4,'Tristán Suárez','tristan suarez'],[4,'Brown de Adrogué','brown'],[4,'Acassuso'],
-  [4,'Colegiales'],[4,'Estudiantes de Buenos Aires','estudiantes de caseros'],[4,'Deportivo Armenio','armenio'],[4,'Defensores de Belgrano','defensores'],
+  [3,'Nueva Chicago'],[3,'Barracas Central'],[3,'Aldosivi'],[3,'Temperley'],[3,'Los Andes'],[3,'Almagro'],[3,'Morón','deportivo moron'],[3,'Olimpo'],
+  [4,'Talleres de Remedios de Escalada','talleres de escalada'],[4,'Deportivo Riestra','riestra'],[4,'Sacachispas'],[4,'Excursionistas'],
+  [4,'Comunicaciones'],[4,'Tristán Suárez','tristan suarez'],[4,'Brown de Adrogué','brown'],[4,'Acassuso'],[4,'Colegiales'],
+  [4,'Estudiantes de Buenos Aires','estudiantes de caseros'],[4,'Deportivo Armenio','armenio'],[4,'Defensores de Belgrano','defensores'],
   [4,'Sportivo Italiano','italiano'],[4,'Dock Sud'],[4,'El Porvenir','porvenir'],[4,'Claypole'],[4,'Victoriano Arenas'],[4,'Fénix'],[4,'Midland'],
   [5,'Yupanqui'],[5,'Ituzaingó'],[5,'Leandro N. Alem','alem'],[5,'Atlas'],[5,'Puerto Nuevo'],[5,'Lugano'],[5,'Centro Español'],
   [5,'Argentino de Quilmes'],[5,'Cañuelas'],[5,'Club Atlético Juventud Unida','juventud unida']]}
- ,{q:'Un elemento químico que sea un metal',g:'cien',a:[
-  [0,'Hierro'],[0,'Oro'],[0,'Plata'],[1,'Cobre'],[1,'Aluminio'],[2,'Zinc','cinc'],[2,'Plomo'],[2,'Mercurio'],[2,'Níquel'],
-  [2,'Litio'],[2,'Sodio'],[2,'Potasio'],[2,'Calcio'],[2,'Estaño'],[2,'Titanio'],[2,'Platino'],[3,'Magnesio'],[3,'Cromo'],
-  [3,'Cobalto'],[3,'Manganeso'],[3,'Uranio'],[3,'Tungsteno','wolframio'],[3,'Plutonio'],[4,'Cadmio'],[4,'Bario'],[4,'Vanadio'],
-  [4,'Molibdeno'],[4,'Paladio'],[4,'Iridio'],[4,'Osmio'],[4,'Cesio'],[4,'Rubidio'],[4,'Estroncio'],[4,'Berilio'],[4,'Torio'],
-  [4,'Radio'],[4,'Galio'],[4,'Indio'],[4,'Bismuto'],[4,'Circonio','zirconio'],[5,'Escandio'],[5,'Itrio'],[5,'Lantano'],[5,'Cerio'],
-  [5,'Neodimio'],[5,'Europio'],[5,'Gadolinio'],[5,'Hafnio'],[5,'Tantalio'],[5,'Renio'],[5,'Rodio'],[5,'Rutenio'],[5,'Talio'],
-  [5,'Francio'],[5,'Niobio'],[5,'Tecnecio'],[5,'Polonio'],[5,'Americio'],[5,'Lutecio'],[5,'Iterbio'],[5,'Samario'],[5,'Praseodimio']]}
+ , {q:'Un elemento químico que sea un metal',g:'cien',a:[
+  [0,'Hierro'],[0,'Oro'],[0,'Plata'],[1,'Cobre'],[1,'Aluminio'],[2,'Zinc','cinc'],[2,'Plomo'],[2,'Mercurio'],[2,'Níquel'],[2,'Litio'],[2,'Sodio'],
+  [2,'Potasio'],[2,'Calcio'],[2,'Estaño'],[2,'Titanio'],[2,'Platino'],[3,'Magnesio'],[3,'Cromo'],[3,'Cobalto'],[3,'Manganeso'],[3,'Uranio'],
+  [3,'Tungsteno','wolframio'],[3,'Plutonio'],[4,'Cadmio'],[4,'Bario'],[4,'Vanadio'],[4,'Molibdeno'],[4,'Paladio'],[4,'Iridio'],[4,'Osmio'],
+  [4,'Cesio'],[4,'Rubidio'],[4,'Estroncio'],[4,'Berilio'],[4,'Torio'],[4,'Radio'],[4,'Galio'],[4,'Indio'],[4,'Bismuto'],[4,'Circonio','zirconio'],
+  [5,'Escandio'],[5,'Itrio'],[5,'Lantano'],[5,'Cerio'],[5,'Neodimio'],[5,'Europio'],[5,'Gadolinio'],[5,'Hafnio'],[5,'Tantalio'],[5,'Renio'],
+  [5,'Rodio'],[5,'Rutenio'],[5,'Talio'],[5,'Francio'],[5,'Niobio'],[5,'Tecnecio'],[5,'Polonio'],[5,'Americio'],[5,'Lutecio'],[5,'Iterbio'],
+  [5,'Samario'],[5,'Praseodimio']]}
+ , {q:'Una película cuyo protagonista sea un animal que habla',g:'peli',a:[
+  [0,'El Rey León','the lion king'],[0,'Madagascar'],[0,'Buscando a Nemo','nemo'],[1,'Kung Fu Panda'],[1,'La era de hielo','ice age'],
+  [1,'Zootopia','zootopia 2'],[1,'Ratatouille'],[1,'Babe','babe el chanchito valiente'],[1,'Stuart Little'],[1,'Bolt'],[1,'Bambi'],
+  [1,'La dama y el vagabundo'],[1,'Los aristogatos'],[1,'Sing','sing ven y canta'],[1,'La vida secreta de tus mascotas','mascotas'],[2,'Rio'],
+  [2,'Garfield'],[2,'Buscando a Dory','dory'],[2,'Chicken Little'],[2,'Pollitos en fuga','chicken run'],[2,'Paddington'],
+  [2,'Bee Movie','bee movie la historia de una abeja'],[2,'El libro de la selva'],[2,'Robin Hood'],[2,'Hermano oso'],[2,'El gato con botas'],
+  [2,'Sonic','sonic la pelicula'],[3,'Detective Pikachu','pikachu'],[3,'Fantástico Sr. Fox','fantastico senor fox|mr fox'],[3,'Hormiguitaz','antz'],
+  [3,'Bichos'],[3,'Ferdinand','ole el viaje de ferdinand'],[3,'Isla de perros'],[3,'Rango'],[3,'Como perros y gatos','cats and dogs'],
+  [3,'Vecinos invasores'],[3,'Zafarrancho en el rancho'],[3,'Colegas en el bosque','open season'],[3,'Hop'],[3,'Valiant'],[3,'Leo'],[4,'Balto'],
+  [4,'Fievel','un cuento americano'],[4,'Todos los perros van al cielo'],[4,'La telaraña de Carlota','charlotte'],[4,'Los rescatadores'],
+  [4,'Oliver y su pandilla'],[4,'El zorro y el sabueso'],[4,'Rock Dog'],[5,'Watership Down','la colina de watership'],
+  [5,'Babe 2','babe el cerdito en la ciudad']]}
+ , {q:'Una comida o bebida de una sola palabra que termine en O',g:'comida',a:[
+  [0,'Asado'],[0,'Vino'],[0,'Pollo'],[0,'Helado'],[0,'Queso'],[1,'Huevo'],[1,'Locro'],[1,'Jugo'],[1,'Pescado'],[1,'Guiso'],[1,'Choclo'],[1,'Durazno'],
+  [1,'Mango'],[1,'Chorizo'],[1,'Pancho'],[2,'Coco'],[2,'Higo'],[2,'Zapallo'],[2,'Puchero'],[2,'Licuado'],[2,'Cortado'],[2,'Mojito'],[2,'Taco'],
+  [2,'Burrito'],[2,'Churro'],[2,'Tostado'],[2,'Bizcochuelo'],[2,'Caramelo'],[2,'Pochoclo'],[2,'Fideo'],[2,'Ajo'],[2,'Pepino'],[2,'Pavo'],[2,'Cerdo'],
+  [2,'Cordero'],[2,'Pulpo'],[3,'Mondongo'],[3,'Capuchino','cappuccino'],[3,'Submarino'],[3,'Espresso','expreso'],[3,'Pisco'],[3,'Bizcocho'],
+  [3,'Buñuelo'],[3,'Revuelto'],[3,'Estofado'],[3,'Churrasco'],[3,'Lomo'],[3,'Conejo'],[3,'Pato'],[3,'Langostino'],[3,'Cangrejo'],[3,'Bacalao'],
+  [3,'Lenguado'],[3,'Garbanzo'],[3,'Poroto'],[3,'Repollo'],[3,'Rábano'],[3,'Apio'],[3,'Hongo'],[3,'Pomelo'],[3,'Damasco'],[3,'Membrillo'],
+  [3,'Orégano'],[3,'Romero'],[3,'Caldo'],[3,'Batido'],[3,'Risotto'],[3,'Pesto'],[3,'Gazpacho'],[3,'Bocadillo'],[3,'Clericó'],[4,'Prosecco'],
+  [4,'Lambrusco'],[4,'Moscato'],[4,'Oporto'],[4,'Macchiato'],[4,'Ristretto'],[4,'Mosto'],[4,'Carpaccio'],[4,'Prosciutto'],[4,'Gelato'],[4,'Miso'],
+  [4,'Níspero'],[4,'Arándano'],[4,'Quinoto'],[4,'Espárrago'],[4,'Puerro'],[4,'Berro'],[4,'Hinojo'],[4,'Nabo'],[4,'Comino'],[4,'Cilantro'],
+  [4,'Pimiento'],[4,'Pororó'],[4,'Trigo'],[5,'Centeno'],[5,'Tomillo'],[5,'Granizado'],[5,'Pejerrey'],[5,'Mijo']]}
+ , {q:'Un animal de una sola palabra con 7 letras o más',g:'animal',a:[
+  [0,'Elefante'],[0,'Cocodrilo'],[0,'Tiburón'],[1,'Hipopótamo'],[1,'Rinoceronte'],[1,'Canguro'],[1,'Tortuga'],[1,'Ballena'],[1,'Caballo'],
+  [1,'Serpiente'],[1,'Murciélago'],[1,'Mariposa'],[1,'Pingüino'],[1,'Leopardo'],[1,'Chimpancé'],[2,'Guepardo'],[2,'Orangután'],[2,'Camaleón'],
+  [2,'Escorpión'],[2,'Cucaracha'],[2,'Mosquito'],[2,'Ardilla'],[2,'Hámster'],[2,'Mapache'],[2,'Avestruz'],[2,'Flamenco'],[2,'Pelícano'],[2,'Hormiga'],
+  [2,'Lagartija'],[2,'Cangrejo'],[2,'Carpincho'],[2,'Dinosaurio'],[2,'Gallina'],[2,'Pantera'],[2,'Camello'],[2,'Tarántula'],[3,'Ornitorrinco'],
+  [3,'Golondrina'],[3,'Gorrión'],[3,'Lechuza'],[3,'Colibrí'],[3,'Gaviota'],[3,'Cigüeña'],[3,'Lagarto'],[3,'Langosta'],[3,'Calamar'],[3,'Caracol'],
+  [3,'Lombriz'],[3,'Yaguareté'],[3,'Vizcacha'],[3,'Guanaco'],[3,'Hornero'],[3,'Comadreja'],[3,'Armadillo'],[3,'Zorrino'],[3,'Chinchilla'],
+  [3,'Suricata'],[3,'Antílope'],[3,'Bisonte'],[3,'Perezoso'],[3,'Dromedario'],[3,'Puercoespín'],[3,'Escarabajo'],[3,'Saltamontes'],[3,'Libélula'],
+  [3,'Luciérnaga'],[3,'Guacamayo'],[3,'Papagayo'],[3,'Periquito'],[3,'Canario'],[3,'Salamandra'],[3,'Renacuajo'],[3,'Babuino'],[4,'Mangosta'],
+  [4,'Abejorro'],[4,'Cigarra'],[4,'Cotorra'],[4,'Gavilán'],[4,'Albatros'],[4,'Langostino'],[4,'Camarón'],[4,'Mejillón'],[4,'Anguila'],[4,'Sardina'],
+  [4,'Bacalao'],[4,'Merluza'],[4,'Pejerrey'],[4,'Hipocampo'],[4,'Ajolote'],[4,'Ocelote'],[4,'Mandril'],[4,'Marmota'],[4,'Cachalote'],[4,'Chancho'],
+  [4,'Carnero'],[4,'Cordero'],[4,'Ternero'],[4,'Becerro'],[4,'Potrillo'],[4,'Cormorán'],[4,'Codorniz'],[4,'Cacatúa'],[4,'Ciempiés'],[4,'Milpiés'],
+  [4,'Garrapata'],[4,'Termita'],[4,'Polilla'],[4,'Caracal'],[5,'Musaraña'],[5,'Equidna'],[5,'Frailecillo'],[5,'Pichiciego'],[5,'Ñacurutú'],
+  [5,'Quirquincho'],[5,'Yaguarundí']]}
+ , {q:'Un jugador retirado de la NBA, la Premier League, La Liga, la AFL o la IPL',g:'dep',a:[
+  [0,'Michael Jordan','jordan'],[0,'Kobe Bryant','kobe|bryant'],[0,'Manu Ginóbili','manu|ginobili'],[0,'Ronaldinho'],
+  [0,'Diego Maradona','maradona|diego'],[1,'Shaquille O\'Neal','shaq|shaquille|o neal'],[1,'Zinedine Zidane','zidane|zizou'],
+  [1,'Sergio Agüero','aguero|kun|kun aguero'],[1,'Carlos Tevez','tevez'],[1,'Juan Román Riquelme','riquelme|roman'],[1,'Thierry Henry','henry'],
+  [1,'Wayne Rooney','rooney'],[1,'David Beckham','beckham'],[1,'Andrés Iniesta','iniesta'],[1,'Xavi Hernández','xavi'],[1,'Iker Casillas','casillas'],
+  [1,'Ronaldo Nazário','ronaldo|el fenomeno'],[1,'Javier Mascherano','mascherano|jefecito'],[2,'Magic Johnson','magic'],
+  [2,'Larry Bird','bird'],[2,'Tim Duncan','duncan'],[2,'Dirk Nowitzki','nowitzki|dirk'],[2,'Steven Gerrard','gerrard'],[2,'Frank Lampard','lampard'],
+  [2,'Didier Drogba','drogba'],[2,'Luis Scola','scola'],[2,'Andrés Nocioni','nocioni|chapu'],[2,'Carles Puyol','puyol'],[2,'Raúl González','raul'],
+  [2,'Fernando Torres','torres'],[2,'Gerard Piqué','pique'],[2,'Diego Simeone','simeone|cholo'],[2,'Pablo Aimar','aimar'],
+  [2,'Gonzalo Higuaín','higuain|pipita'],[2,'Fernando Redondo','redondo'],[2,'Toni Kroos','kroos'],[2,'Gareth Bale','bale'],
+  [2,'Eden Hazard','hazard'],[2,'Zlatan Ibrahimović','zlatan|ibrahimovic'],[2,'Dennis Rodman','rodman'],
+  [2,'Scottie Pippen','pippen'],[2,'Allen Iverson','iverson'],[2,'Yao Ming','yao'],[3,'Kareem Abdul-Jabbar','kareem|abdul jabbar'],
+  [3,'Hakeem Olajuwon','olajuwon|hakeem'],[3,'Pau Gasol','gasol'],[3,'Tony Parker','parker'],[3,'Dwyane Wade','wade'],[3,'Kevin Garnett','garnett'],
+  [3,'Charles Barkley','barkley'],[3,'Karl Malone','malone'],[3,'Steve Nash','nash'],[3,'Carmelo Anthony','carmelo|melo'],[3,'Vince Carter','carter'],
+  [3,'Derrick Rose','rose'],[3,'Fabricio Oberto','oberto'],[3,'Carlos Delfino','delfino'],[3,'Pablo Prigioni','prigioni'],
+  [3,'Alan Shearer','shearer'],[3,'Paul Scholes','scholes'],[3,'Ryan Giggs','giggs'],[3,'Eric Cantona','cantona'],[3,'Dennis Bergkamp','bergkamp'],
+  [3,'John Terry','terry'],[3,'Rio Ferdinand'],[3,'Michael Owen','owen'],[3,'Pablo Zabaleta','zabaleta'],
+  [3,'Juan Sebastián Verón','veron|bruja veron'],[3,'Hernán Crespo','crespo'],[3,'Gabriel Heinze','heinze'],[3,'Maxi Rodríguez'],
+  [3,'Luis Figo','figo'],[3,'Samuel Eto\'o','eto o|etoo'],[3,'David Villa','villa'],[3,'Johan Cruyff','cruyff'],[3,'Alfredo Di Stéfano','di stefano'],
+  [3,'Roberto Carlos'],[3,'Rivaldo'],[3,'Kaká'],[3,'Pepe'],[3,'Mesut Özil','ozil'],[3,'Cesc Fàbregas','fabregas|cesc'],[3,'Xabi Alonso'],
+  [3,'David Silva'],[3,'Robin van Persie','van persie'],[3,'Patrick Vieira','vieira'],[4,'Wilt Chamberlain','chamberlain'],[4,'Bill Russell'],
+  [4,'Reggie Miller'],[4,'Tracy McGrady','mcgrady|t mac'],[4,'John Stockton','stockton'],[4,'Patrick Ewing','ewing'],[4,'Paul Pierce','pierce'],
+  [4,'Ray Allen'],[4,'Dwight Howard','howard'],[4,'Walter Herrmann','herrmann'],[4,'Peter Schmeichel','schmeichel'],[4,'Petr Čech','cech'],
+  [4,'Edwin van der Sar','van der sar'],[4,'Gary Neville'],[4,'Ashley Cole'],[4,'Sol Campbell'],[4,'Nemanja Vidić','vidic'],[4,'Yaya Touré','toure'],
+  [4,'Vincent Kompany','kompany'],[4,'Robbie Fowler','fowler'],[4,'Raphaël Varane','varane'],[4,'Hristo Stoichkov','stoichkov'],[4,'Romário'],
+  [4,'Ferenc Puskás','puskas'],[4,'Jorge Valdano','valdano'],[4,'Fernando Hierro','hierro'],[4,'Guti'],[4,'Ruud van Nistelrooy','van nistelrooy'],
+  [4,'Fernando Gago','gago'],[4,'Marcos Senna','senna'],[4,'Sachin Tendulkar','tendulkar|sachin'],[4,'Shane Warne','warne'],
+  [5,'AB de Villiers','de villiers|abd'],[5,'Chris Gayle','gayle'],[5,'Suresh Raina','raina'],[5,'Brendon McCullum','mccullum'],
+  [5,'Lasith Malinga','malinga'],[5,'Yuvraj Singh','yuvraj'],[5,'Adam Gilchrist','gilchrist'],[5,'Dwayne Bravo','bravo'],
+  [5,'Kieron Pollard','pollard'],[5,'Harbhajan Singh','harbhajan'],[5,'Sourav Ganguly','ganguly'],[5,'Rahul Dravid','dravid'],
+  [5,'Virender Sehwag','sehwag'],[5,'Shane Watson','watson'],[5,'Gary Ablett','ablett'],[5,'Lance Franklin','buddy franklin|franklin'],
+  [5,'Chris Judd','judd'],[5,'Wayne Carey','carey'],[5,'Leigh Matthews'],[5,'Tony Lockett','lockett'],[5,'Jason Dunstall','dunstall'],
+  [5,'Nathan Buckley','buckley'],[5,'James Hird','hird'],[5,'Adam Goodes','goodes'],[5,'Dustin Martin','dusty'],[5,'Matthew Pavlich','pavlich'],
+  [5,'Jonathan Brown']]}
+ , {q:'Una ciudad terminada en -burgo, -burg, -bourg, -burgh o -ville',g:'ciudad',a:[
+  [0,'Hamburgo','hamburg'],[1,'Luxemburgo','luxembourg|luxemburg'],[1,'San Petersburgo','saint petersburg|st petersburg|petersburgo'],
+  [1,'Estrasburgo','strasbourg'],[1,'Edimburgo','edinburgh'],[1,'Johannesburgo','johannesburg'],[2,'Salzburgo','salzburg'],
+  [2,'Pittsburgh','pittsburg'],[2,'Nashville'],[2,'Gotemburgo','goteborg|gothenburg'],[3,'Louisville'],[3,'Jacksonville'],
+  [3,'Friburgo','freiburg|fribourg'],[3,'Wolfsburgo','wolfsburg'],[3,'Magdeburgo','magdeburg'],[3,'Augsburgo','augsburg'],[3,'Brazzaville'],
+  [3,'Libreville'],[3,'Cherburgo','cherbourg'],[3,'Duisburgo','duisburg'],[3,'Gettysburg'],[4,'Ekaterimburgo','yekaterinburg|ekaterinburg'],
+  [4,'Wurzburgo','wurzburg'],[4,'Ratisbona','regensburg|regensburgo'],[4,'Brandeburgo','brandenburg'],[4,'Oldemburgo','oldenburg|oldenburgo'],
+  [4,'Marburgo','marburg'],[4,'Coburgo','coburg'],[4,'Lüneburg','luneburgo'],[4,'Harrisburg'],[4,'Williamsburg'],[4,'Knoxville'],[4,'Huntsville'],
+  [4,'Asheville'],[4,'Gainesville'],[4,'Joinville'],[4,'Deauville'],[4,'Charlottesville'],[4,'Greenville'],[5,'Orenburgo','orenburg'],
+  [5,'Pietermaritzburg'],[5,'Middelburg','middelburgo'],[5,'Vicksburg'],[5,'Fredericksburg'],[5,'Spartanburg'],[5,'Lynchburg'],[5,'Ludwigsburg'],
+  [5,'Naumburgo','naumburg'],[5,'Evansville'],[5,'Fayetteville'],[5,'Clarksville'],[5,'Danville'],[5,'Abbeville'],[5,'Thionville'],[5,'Trouville'],
+  [5,'Belleville'],[5,'Drummondville'],[5,'Victoriaville'],[5,'Brockville']]}
+ , {q:'Una fruta o verdura que sea blanca por dentro',g:'comida',a:[
+  [0,'Manzana'],[0,'Banana'],[0,'Papa'],[1,'Pera'],[1,'Coco'],[1,'Coliflor'],[1,'Cebolla'],[2,'Ajo'],[2,'Champiñón','hongo'],[2,'Rábano'],[2,'Nabo'],
+  [2,'Mandioca','yuca'],[2,'Lichi'],[3,'Pepino'],[3,'Berenjena'],[3,'Chirimoya'],[3,'Pitaya','pitahaya|fruta del dragon'],[3,'Palmito'],[3,'Puerro'],
+  [3,'Hinojo'],[3,'Repollo','repollo blanco'],[3,'Batata'],[3,'Zapallito','zucchini|calabacin'],[3,'Guanábana'],[3,'Espárrago blanco'],[4,'Jícama'],
+  [4,'Endibia','endivia'],[4,'Colinabo'],[4,'Apionabo'],[4,'Chirivía'],[4,'Daikon'],[4,'Ñame'],[4,'Durazno blanco'],[4,'Rambután'],[4,'Longan'],
+  [4,'Mangostán'],[4,'Echalote','chalota'],[5,'Salsifí'],[5,'Cardo'],[5,'Tupinambo','topinambur|pataca'],[5,'Raíz de loto','loto'],[5,'Jaca']]}
+ , {q:'Un personaje jugable de Valorant, Overwatch, League of Legends o Apex Legends',a:[
+  [0,'Jett'],[0,'Tracer'],[0,'Yasuo'],[0,'Ahri'],[1,'Phoenix'],[1,'Sage'],[1,'Reyna'],[1,'Mercy'],[1,'Genji'],[1,'D.Va','dva'],[1,'Lux'],[1,'Jinx'],
+  [1,'Teemo'],[1,'Wraith'],[1,'Bloodhound'],[2,'Sova'],[2,'Omen'],[2,'Raze'],[2,'Cypher'],[2,'Killjoy'],[2,'Reaper'],[2,'Hanzo'],[2,'Widowmaker'],
+  [2,'Reinhardt'],[2,'Soldier: 76','soldier'],[2,'Lúcio'],[2,'Ana'],[2,'Garen'],[2,'Ezreal'],[2,'Zed'],[2,'Thresh'],[2,'Lee Sin'],[2,'Darius'],
+  [2,'Vayne'],[2,'Katarina'],[2,'Master Yi'],[2,'Vi'],[2,'Caitlyn'],[2,'Ekko'],[2,'Lifeline'],[2,'Pathfinder'],[2,'Octane'],[2,'Mirage'],
+  [3,'Brimstone'],[3,'Viper'],[3,'Breach'],[3,'Skye'],[3,'Yoru'],[3,'Neon'],[3,'Chamber'],[3,'Winston'],[3,'Pharah'],[3,'Mei'],[3,'Bastion'],
+  [3,'Torbjörn'],[3,'Zarya'],[3,'Roadhog'],[3,'Junkrat'],[3,'Cassidy','mccree'],[3,'Moira'],[3,'Sombra'],[3,'Kiriko'],[3,'Annie'],[3,'Ashe'],
+  [3,'Akali'],[3,'Draven'],[3,'Blitzcrank'],[3,'Morgana'],[3,'Riven'],[3,'Jayce'],[3,'Viktor'],[3,'Kai\'Sa','kaisa'],[3,'Pyke'],[3,'Aatrox'],
+  [3,'Yone'],[3,'Gibraltar'],[3,'Bangalore'],[3,'Caustic'],[3,'Wattson'],[3,'Horizon'],[3,'Valkyrie'],[3,'Revenant'],[4,'Astra'],[4,'KAY/O','kayo'],
+  [4,'Fade'],[4,'Harbor'],[4,'Gekko'],[4,'Deadlock'],[4,'Clove'],[4,'Brigitte'],[4,'Symmetra'],[4,'Zenyatta'],[4,'Doomfist'],[4,'Orisa'],[4,'Sigma'],
+  [4,'Echo'],[4,'Baptiste'],[4,'Wrecking Ball','hammond'],[4,'Junker Queen'],[4,'Sojourn'],[4,'Malphite'],[4,'Nasus'],[4,'Renekton'],[4,'Singed'],
+  [4,'Sona'],[4,'Soraka'],[4,'Twisted Fate'],[4,'Senna'],[4,'Sett'],[4,'Seraphine'],[4,'Leona'],[4,'Diana'],[4,'Nidalee'],[4,'Kayn'],[4,'Rengar'],
+  [4,'Fizz'],[4,'Veigar'],[4,'Brand'],[4,'Janna'],[4,'Nami'],[4,'Lulu'],[4,'Heimerdinger'],[4,'Amumu'],[4,'Shaco'],[4,'Warwick'],[4,'Sylas'],
+  [4,'Crypto'],[4,'Loba'],[4,'Rampart'],[4,'Fuse'],[4,'Seer'],[4,'Ash'],[4,'Mad Maggie'],[4,'Catalyst'],[5,'Iso'],[5,'Vyse'],[5,'Tejo'],[5,'Waylay'],
+  [5,'Ramattra'],[5,'Lifeweaver'],[5,'Illari'],[5,'Mauga'],[5,'Venture'],[5,'Juno'],[5,'Hazard'],[5,'Kha\'Zix','khazix'],[5,'Cho\'Gath','chogath'],
+  [5,'Vel\'Koz','velkoz'],[5,'Aurelion Sol'],[5,'Mordekaiser'],[5,'Nocturne'],[5,'Udyr'],[5,'Volibear'],[5,'Ornn'],[5,'Zoe'],[5,'Neeko'],[5,'Gwen'],
+  [5,'Viego'],[5,'Bel\'Veth','belveth'],[5,'Smolder'],[5,'Hwei'],[5,'Aurora'],[5,'Ambessa'],[5,'Rammus'],[5,'Ziggs'],[5,'Zyra'],[5,'Newcastle'],
+  [5,'Vantage'],[5,'Ballistic'],[5,'Conduit'],[5,'Alter'],[5,'Sparrow']]}
+ , {q:'Una criatura marina',g:'animal',a:[
+  [0,'Tiburón','tiburon blanco|gran tiburon blanco'],[0,'Ballena'],[0,'Delfín'],[0,'Pulpo'],[1,'Medusa','agua viva|aguaviva'],[1,'Estrella de mar'],
+  [1,'Orca'],[1,'Calamar'],[1,'Cangrejo'],[1,'Caballito de mar','hipocampo'],[2,'Tortuga marina','tortuga'],[2,'Foca'],[2,'Lobo marino'],
+  [2,'Langosta'],[2,'Camarón'],[2,'Langostino'],[2,'Mejillón'],[2,'Almeja'],[2,'Ostra'],[2,'Erizo de mar','erizo'],[2,'Pez payaso','nemo'],
+  [2,'Mantarraya','manta|raya'],[3,'Morena'],[3,'Coral'],[3,'Esponja de mar','esponja'],[3,'Anémona'],[3,'Manatí'],[3,'Morsa'],[3,'Narval'],
+  [3,'Beluga'],[3,'Cachalote'],[3,'Pez espada'],[3,'Pez globo'],[3,'Barracuda'],[3,'Atún'],[3,'Salmón'],[3,'Sardina'],[3,'Merluza'],
+  [3,'Tiburón martillo','pez martillo'],[3,'Elefante marino'],[3,'Pingüino'],[3,'Centolla'],[3,'Sepia'],[3,'Pez cirujano','dory'],
+  [3,'Calamar gigante'],[3,'Tiburón ballena'],[4,'Nutria marina'],[4,'Pepino de mar'],[4,'Krill'],[4,'Nautilo'],[4,'Caracola'],[4,'Percebe'],
+  [4,'Vieira'],[4,'Pez león'],[4,'Pez luna'],[4,'Pez volador'],[4,'Lenguado'],[4,'Mero'],[4,'Dugongo'],[4,'Cangrejo ermitaño'],[4,'Pez ángel'],
+  [4,'Pez linterna'],[4,'Bacalao'],[4,'Anguila'],[5,'Rape','pez rape'],[5,'Pez remo'],[5,'Isópodo gigante','isopodo'],
+  [5,'Nudibranquio','babosa de mar'],[5,'Pulpo dumbo'],[5,'Quimera'],[5,'Tiburón duende'],[5,'Cangrejo araña'],[5,'Calamar vampiro'],
+  [5,'Franciscana'],[5,'Tonina overa','tonina']]}
+ , {q:'Una sustancia que produce el cuerpo humano',g:'cuerpo',a:[
+  [0,'Sangre'],[0,'Saliva','baba'],[0,'Sudor'],[1,'Lágrimas','lagrima'],[1,'Orina','pis|pipi'],[1,'Moco','mocos|mucosidad'],[1,'Adrenalina'],
+  [1,'Insulina'],[1,'Caca','heces|materia fecal|excremento'],[2,'Cerumen','cera'],[2,'Bilis'],[2,'Testosterona'],[2,'Estrógeno','estrogenos'],
+  [2,'Serotonina'],[2,'Dopamina'],[2,'Endorfina','endorfinas'],[2,'Leche materna','leche'],[2,'Semen','esperma'],[2,'Melatonina'],[2,'Cortisol'],
+  [2,'Oxitocina'],[2,'Colesterol'],[3,'Jugo gástrico','acido clorhidrico'],[3,'Hemoglobina'],[3,'Queratina'],[3,'Melanina'],[3,'Colágeno'],[3,'Pus'],
+  [3,'Sebo','grasa'],[3,'Gases','flatulencia|pedo'],[3,'Flema'],[3,'Plasma'],[3,'Anticuerpos','anticuerpo'],[3,'Hormona de crecimiento'],
+  [3,'Progesterona'],[3,'Linfa'],[3,'Histamina'],[3,'Enzimas','enzima'],[4,'Glucagón'],[4,'Tiroxina'],[4,'Prolactina'],[4,'Pepsina'],[4,'Amilasa'],
+  [4,'Lipasa'],[4,'Tripsina'],[4,'Urea'],[4,'Ácido láctico'],[4,'Ácido úrico'],[4,'Bilirrubina'],[4,'Calostro'],[4,'Líquido cefalorraquídeo'],
+  [4,'Glucógeno'],[4,'Noradrenalina'],[4,'Acetilcolina'],[4,'Fibrina'],[5,'Leptina'],[5,'Grelina'],[5,'Vasopresina','hormona antidiuretica'],
+  [5,'Eritropoyetina','epo'],[5,'Líquido sinovial'],[5,'Surfactante'],[5,'Interferón'],[5,'Trombina'],[5,'Secretina'],[5,'Gastrina'],[5,'GABA'],
+  [5,'Esmegma']]}
+ , {q:'Una lesión',a:[
+  [0,'Esguince','esguince de tobillo'],[0,'Fractura','quebradura'],[1,'Desgarro'],[1,'Luxación','dislocacion'],
+  [1,'Rotura de ligamentos','ligamentos cruzados|ligamento cruzado'],[1,'Tendinitis'],[1,'Contractura'],[1,'Moretón','hematoma'],[2,'Corte'],
+  [2,'Quemadura'],[2,'Raspón','raspadura'],[2,'Torcedura'],[2,'Conmoción cerebral','conmocion'],[2,'Hernia de disco','hernia'],[2,'Pubalgia'],
+  [2,'Distensión'],[2,'Fisura'],[2,'Rotura de menisco','menisco'],[2,'Tirón'],[3,'Ampolla'],[3,'Herida'],
+  [3,'Rotura del tendón de Aquiles','tendon de aquiles'],[3,'Codo de tenista','epicondilitis'],[3,'Fascitis plantar'],[3,'Bursitis'],[3,'Sobrecarga'],
+  [3,'Lumbalgia'],[3,'Tortícolis'],[3,'Latigazo cervical'],[3,'Fractura de estrés'],[3,'Calambre'],[3,'Traumatismo'],[3,'Ojo morado'],[3,'Chichón'],
+  [3,'Contusión'],[4,'Periostitis'],[4,'Mordedura'],[4,'Congelamiento'],[4,'Túnel carpiano','sindrome del tunel carpiano'],[4,'Manguito rotador'],
+  [4,'Condromalacia'],[4,'Espolón calcáneo','espolon'],[4,'Rodilla de saltador'],[4,'Laceración'],[4,'Escoriación'],[4,'Esguince cervical'],
+  [5,'Osgood-Schlatter'],[5,'Avulsión'],[5,'Neumotórax'],[5,'Desprendimiento de retina'],[5,'Síndrome compartimental'],[5,'Fractura de Colles']]}
+ , {q:'Una parte de una figura 2D o 3D',g:'mate',a:[
+  [0,'Lado'],[0,'Vértice','vertices'],[0,'Ángulo'],[1,'Arista'],[1,'Cara'],[1,'Base'],[1,'Altura'],[1,'Radio'],[1,'Diámetro'],[2,'Diagonal'],
+  [2,'Centro'],[2,'Perímetro'],[2,'Circunferencia'],[2,'Esquina'],[2,'Borde'],[2,'Hipotenusa'],[2,'Cateto'],[3,'Área'],[3,'Superficie'],[3,'Cuerda'],
+  [3,'Arco'],[3,'Apotema'],[3,'Mediana'],[3,'Mediatriz'],[3,'Bisectriz'],[3,'Eje'],[3,'Cúspide','punta'],[3,'Sector'],[3,'Segmento'],[3,'Contorno'],
+  [3,'Volumen'],[4,'Generatriz'],[4,'Tangente'],[4,'Secante'],[4,'Foco'],[4,'Semieje'],[4,'Baricentro'],[4,'Incentro'],[4,'Circuncentro'],
+  [4,'Ortocentro'],[4,'Ecuador'],[4,'Polo'],[5,'Directriz'],[5,'Meridiano'],[5,'Casquete'],[5,'Huso'],[5,'Flecha','sagita']]}
+ , {q:'Una rama de la matemática',g:'mate',a:[
+  [0,'Álgebra'],[0,'Geometría'],[0,'Aritmética'],[1,'Cálculo'],[1,'Estadística'],[1,'Trigonometría'],[1,'Probabilidad'],
+  [2,'Análisis matemático','analisis'],[2,'Álgebra lineal'],[2,'Lógica'],[2,'Combinatoria'],[2,'Geometría analítica'],[2,'Matemática financiera'],
+  [3,'Topología'],[3,'Teoría de números','aritmetica superior'],[3,'Teoría de conjuntos'],[3,'Ecuaciones diferenciales'],[3,'Matemática discreta'],
+  [3,'Teoría de grafos','grafos'],[3,'Análisis numérico','calculo numerico'],[3,'Teoría de juegos'],[3,'Criptografía'],[3,'Geometría euclidiana'],
+  [3,'Cálculo vectorial'],[3,'Investigación operativa'],[3,'Optimización'],[4,'Geometría diferencial'],[4,'Teoría de categorías'],
+  [4,'Análisis funcional'],[4,'Análisis complejo','variable compleja'],[4,'Teoría de la medida'],[4,'Teoría de grupos'],[4,'Álgebra abstracta'],
+  [4,'Geometría algebraica'],[4,'Teoría de nudos'],[4,'Actuaría','ciencias actuariales'],[4,'Teoría de la información'],[4,'Teoría del caos'],
+  [4,'Geometría proyectiva'],[4,'Geometría fractal','fractales'],[5,'Topología algebraica'],[5,'Teoría de Galois'],[5,'Teoría de Ramsey'],
+  [5,'Teoría de representaciones'],[5,'Análisis armónico'],[5,'Teoría de la computabilidad'],[5,'Geometría no euclidiana'],[5,'Teoría ergódica'],
+  [5,'Sistemas dinámicos']]}
+ , {q:'Un invento anterior al año 1500',a:[
+  [0,'Rueda'],[0,'Imprenta'],[1,'Brújula'],[1,'Pólvora'],[1,'Papel'],[1,'Escritura'],[1,'Fuego'],[2,'Arado'],[2,'Barco'],[2,'Reloj de sol'],
+  [2,'Reloj de arena'],[2,'Ábaco'],[2,'Anteojos','lentes|gafas'],[2,'Molino de viento','molino'],[2,'Catapulta'],[2,'Arco y flecha','arco'],
+  [2,'Espada'],[2,'Lanza'],[2,'Cañón'],[2,'Calendario'],[2,'Moneda','dinero'],[2,'Alfabeto'],[3,'Ballesta'],[3,'Molino de agua'],[3,'Acueducto'],
+  [3,'Ladrillo'],[3,'Cerámica'],[3,'Vidrio'],[3,'Jabón'],[3,'Tijeras'],[3,'Hacha'],[3,'Martillo'],[3,'Aguja'],[3,'Telar'],[3,'Polea'],[3,'Palanca'],
+  [3,'Astrolabio'],[3,'Papel moneda','billete'],[3,'Ajedrez'],[3,'Reloj mecánico'],[3,'Espejo'],[3,'Balanza'],[3,'Carreta','carro'],[3,'Vela'],
+  [3,'Números','cero'],[3,'Cuchillo'],[4,'Estribo'],[4,'Herradura'],[4,'Rueca'],[4,'Carretilla'],[4,'Tornillo de Arquímedes'],[4,'Seda'],
+  [4,'Porcelana'],[4,'Naipes','cartas'],[4,'Hormigón','concreto'],[4,'Cohete'],[4,'Tinta'],[4,'Pergamino'],[4,'Tenedor'],[4,'Paraguas'],
+  [4,'Barrilete','cometa'],[4,'Cerradura','llave'],[4,'Fuegos artificiales'],[4,'Ancla'],[4,'Timón'],[4,'Faro'],[4,'Trineo'],[4,'Canoa'],
+  [4,'Cerveza'],[4,'Silla de montar'],[5,'Sismógrafo'],[5,'Cepillo de dientes'],[5,'Cuadrante'],[5,'Clepsidra','reloj de agua'],[5,'Trabuco'],
+  [5,'Mecanismo de Anticitera','anticitera'],[5,'Odómetro'],[5,'Pila de Bagdad']]}
+ , {q:'Un objeto con forma de cono',a:[
+  [0,'Cucurucho','cono de helado|helado'],[0,'Cono de tránsito','cono|cono naranja'],[1,'Embudo'],[1,'Gorro de cumpleaños','gorrito de cumpleanos'],
+  [1,'Sombrero de bruja','sombrero de mago'],[2,'Megáfono'],[2,'Árbol de Navidad','pino'],[2,'Tipi'],[2,'Sombrero chino','sombrero vietnamita'],
+  [2,'Trompo'],[3,'Cuerno','cuerno de unicornio'],[3,'Zanahoria'],[3,'Pantalla de lámpara','pantalla'],[3,'Cucurucho de maní'],[3,'Capirote'],
+  [3,'Volcán'],[3,'Corneta'],[3,'Punta de lápiz','lapiz'],[4,'Bocina'],[4,'Copa de martini','copa de cóctel'],[4,'Estalactita'],[4,'Tolva'],
+  [4,'Cohete'],[4,'Pirulín'],[4,'Colmillo'],[4,'Chapitel'],[4,'Barquillo'],[4,'Mecha'],[5,'Collar isabelino'],[5,'Broca'],[5,'Cono de papel'],
+  [5,'Tee de golf'],[5,'Nariz de payaso'],[5,'Ojiva'],[5,'Sacabocados'],[5,'Cono de pino']]}
+ , {q:'Algo que se rocía con un aerosol',a:[
+  [0,'Desodorante'],[0,'Pintura','pintura en aerosol'],[0,'Perfume'],[1,'Insecticida','raid|matamoscas'],[1,'Fijador','laca|spray para el pelo'],
+  [1,'Nieve','nieve en aerosol|espuma'],[1,'Repelente','off'],[2,'Crema chantilly','crema batida'],[2,'Desinfectante','lysoform'],
+  [2,'Aromatizante','ambientador|glade'],[2,'Protector solar'],[2,'Espuma de afeitar'],[2,'Rocío vegetal','aceite en aerosol|aceite'],
+  [2,'Lustramuebles','blem'],[2,'Antitranspirante'],[3,'Silicona'],[3,'Lubricante','wd 40|wd40'],[3,'Shampoo en seco'],[3,'Pegamento'],
+  [3,'Gas pimienta'],[3,'Quitamanchas'],[3,'Barniz'],[3,'Aire comprimido'],[3,'Graffiti'],[3,'Purpurina','brillantina'],[3,'Bronceador'],
+  [4,'Serpentina','serpentina en aerosol'],[4,'Antiempañante'],[4,'Desengrasante'],[4,'Cera para auto'],[4,'Tintura','tintura en aerosol'],
+  [4,'Fijador de maquillaje'],[4,'Agua termal'],[4,'Antiadherente'],[4,'Limpiador de contactos'],[4,'Impermeabilizante'],[5,'Teflón'],[5,'Revelador'],
+  [5,'Cal'],[5,'Spray nasal']]}
+ , {q:'Un material de construcción',a:[
+  [0,'Ladrillo'],[0,'Cemento'],[0,'Madera'],[1,'Hormigón','concreto|hormigon armado'],[1,'Arena'],[1,'Hierro'],[1,'Acero'],[1,'Vidrio'],[2,'Cal'],
+  [2,'Yeso'],[2,'Piedra'],[2,'Cerámica'],[2,'Teja'],[2,'Chapa'],[2,'Durlock','placa de yeso'],[2,'Mármol'],[2,'Granito'],[2,'Adobe'],
+  [2,'Bloque','bloques'],[3,'Ripio','grava'],[3,'Aluminio'],[3,'PVC'],[3,'Membrana','membrana asfaltica'],[3,'Porcelanato'],[3,'Azulejo'],
+  [3,'Mosaico'],[3,'Baldosa'],[3,'Fibrocemento'],[3,'Telgopor','poliestireno'],[3,'Lana de vidrio'],[3,'Bambú'],[3,'Barro','tierra'],[3,'Pizarra'],
+  [3,'Asfalto'],[3,'Cobre'],[3,'Mortero'],[3,'Arcilla'],[4,'Policarbonato'],[4,'Revoque'],[4,'Enduido'],[4,'Machimbre'],[4,'Fenólico'],[4,'OSB'],
+  [4,'MDF'],[4,'Aglomerado'],[4,'Canto rodado'],[4,'Cascote','cascotes'],[4,'Paja'],[4,'Corcho'],[4,'Masilla'],[4,'Pintura'],[5,'Tosca'],
+  [5,'Piedra laja','laja'],[5,'Steel frame'],[5,'Quincha'],[5,'Tapial'],[5,'Travertino'],[5,'Zinc','cinc']]}
+ , {q:'Una parte de una computadora',g:'tec',a:[
+  [0,'Teclado'],[0,'Mouse','raton'],[0,'Monitor','pantalla'],[1,'Procesador','cpu|micro|microprocesador'],[1,'Memoria RAM','ram|memoria'],
+  [1,'Disco duro','disco rigido|hdd|disco'],[1,'Placa de video','tarjeta grafica|gpu|placa grafica'],
+  [1,'Placa madre','motherboard|mother|tarjeta madre'],[2,'Fuente','fuente de alimentacion'],[2,'Gabinete'],[2,'Cooler','ventilador'],
+  [2,'Disco SSD','ssd|disco solido'],[2,'Parlantes','parlante'],[2,'Disipador'],[2,'Lectora de CD','lectora|lectora de dvd|grabadora'],
+  [2,'Placa de sonido'],[2,'Webcam','camara'],[2,'Puerto USB','usb'],[3,'Placa de red'],[3,'Pasta térmica'],[3,'Micrófono'],[3,'Batería'],
+  [3,'Touchpad'],[3,'Cables','cable'],[3,'Pila CMOS','pila|bateria cmos'],[3,'BIOS'],[3,'Impresora'],[3,'Pendrive'],[3,'Auriculares'],
+  [4,'Memoria ROM','rom'],[4,'Chipset'],[4,'Disquetera'],[4,'Módem'],[4,'Escáner'],[4,'Joystick'],[4,'Placa wifi','wifi'],[4,'Router'],
+  [5,'Memoria caché','cache'],[5,'Bus'],[5,'Ranura PCI','pci|pci express'],[5,'Zócalo','socket'],[5,'Northbridge','puente norte'],[5,'Transistor'],
+  [5,'Capacitor','condensador'],[5,'Bluetooth'],[5,'Lector de tarjetas']]}
+ , {q:'Una empresa de telefonía celular',g:'tec',a:[
+  [0,'Personal'],[0,'Claro'],[0,'Movistar'],[1,'Tuenti'],[2,'Nextel'],[2,'Vodafone'],[2,'Telcel'],[2,'Vivo'],[2,'TIM'],[2,'AT&T','att'],[2,'Verizon'],
+  [2,'T-Mobile','tmobile'],[2,'Orange'],[3,'Unifón'],[3,'CTI Móvil','cti'],[3,'Movicom'],[3,'Entel'],[3,'Tigo'],[3,'Antel'],[3,'WOM'],[3,'Oi'],
+  [3,'O2'],[3,'Sprint'],[3,'Telekom','deutsche telekom'],[4,'Digitel'],[4,'Movilnet'],[4,'Bitel'],[4,'Jio'],[4,'Airtel'],[4,'NTT Docomo','docomo'],
+  [4,'SoftBank'],[4,'China Mobile'],[4,'EE'],[4,'Three','3'],[4,'Telstra'],[4,'Rogers'],[4,'Bell'],[4,'Telus'],[4,'Iusacell'],[4,'Imowi'],
+  [4,'Cricket'],[4,'Boost Mobile','boost'],[4,'Free Mobile','free'],[5,'Swisscom'],[5,'Optus'],[5,'KDDI','au'],[5,'Mint Mobile','mint'],
+  [5,'US Cellular'],[5,'Bouygues'],[5,'SFR'],[5,'Iliad'],[5,'Lebara'],[5,'Lycamobile'],[5,'MTN'],[5,'Etisalat','e&'],[5,'Safaricom'],[5,'Viettel']]}
+ , {q:'Uno de los 200 sitios web más visitados',g:'tec',a:[
+  [0,'Google'],[0,'YouTube'],[0,'Facebook'],[0,'Instagram'],[1,'Wikipedia'],[1,'Twitter','x'],[1,'WhatsApp'],[1,'Mercado Libre','mercadolibre'],
+  [1,'Netflix'],[1,'Amazon'],[1,'ChatGPT','openai'],[1,'TikTok'],[2,'Reddit'],[2,'LinkedIn'],[2,'Yahoo'],[2,'Bing'],[2,'Twitch'],[2,'Spotify'],
+  [2,'Pinterest'],[2,'Gmail'],[2,'Outlook','hotmail|live'],[2,'Infobae'],[2,'Clarín'],[2,'La Nación'],[2,'Microsoft'],[2,'Apple'],[3,'eBay'],
+  [3,'Zoom'],[3,'Discord'],[3,'GitHub'],[3,'Telegram'],[3,'Canva'],[3,'Booking'],[3,'Airbnb'],[3,'Roblox'],[3,'Steam'],[3,'Duolingo'],[3,'PayPal'],
+  [3,'Google Drive','drive'],[3,'Traductor de Google','google translate|traductor'],[3,'Disney+','disney plus|disney'],[3,'Prime Video'],
+  [3,'AliExpress'],[3,'Temu'],[3,'Shein'],[3,'Gemini'],[3,'Claude'],[3,'Office','microsoft 365'],[3,'IMDb'],[3,'Fandom'],[3,'Olé'],[3,'ESPN'],
+  [3,'CNN'],[3,'BBC'],[4,'Stack Overflow'],[4,'Quora'],[4,'Tumblr'],[4,'Dropbox'],[4,'Yandex'],[4,'Baidu'],[4,'VK'],[4,'Naver'],[4,'Alibaba'],
+  [4,'Etsy'],[4,'Walmart'],[4,'New York Times','nytimes'],[4,'Perplexity'],[4,'DeepL'],[4,'Character.ai'],[4,'Indeed'],[4,'Samsung'],[4,'Adobe'],
+  [4,'Notion'],[4,'Figma'],[4,'Slack'],[4,'Medium'],[4,'WordPress'],[4,'Mega'],[4,'Weather.com','the weather channel'],[4,'Marca'],[4,'Globo'],
+  [4,'The Guardian'],[4,'Daily Mail'],[4,'Speedtest'],[5,'Internet Archive','archive org|wayback machine'],[5,'Craigslist'],[5,'Zillow'],
+  [5,'AccuWeather'],[5,'Blogger'],[5,'Substack'],[5,'Trello'],[5,'Pixiv'],[5,'Bilibili'],[5,'Rakuten'],[5,'Coupang']]}
+ , {q:'Un buscador de internet',g:'tec',a:[
+  [0,'Google'],[1,'Bing'],[1,'Yahoo'],[2,'DuckDuckGo','duck duck go'],[3,'Baidu'],[3,'Yandex'],[3,'Ask','ask jeeves|ask com'],[3,'AltaVista'],
+  [3,'Ecosia'],[3,'Perplexity'],[4,'Brave Search','brave'],[4,'Startpage'],[4,'Lycos'],[4,'Excite'],[4,'AOL'],[4,'Qwant'],[4,'Naver'],
+  [4,'Wolfram Alpha','wolframalpha'],[4,'MSN Search','msn'],[4,'Google Scholar','google academico'],[4,'Terra'],[5,'Seznam'],[5,'Live Search'],
+  [5,'Dogpile'],[5,'Mojeek'],[5,'Swisscows'],[5,'Searx','searxng'],[5,'Kagi'],[5,'You.com','you'],[5,'WebCrawler'],[5,'Infoseek'],[5,'HotBot'],
+  [5,'Gigablast'],[5,'Cuil'],[5,'Sogou'],[5,'Daum'],[5,'Ixquick'],[5,'Archie'],[5,'Shodan'],[5,'Yippy']]}
+ , {q:'Una marca de anteojos de sol',a:[
+  [0,'Ray-Ban','rayban'],[1,'Oakley'],[1,'Rusty'],[2,'Prada'],[2,'Gucci'],[2,'Infinit'],[2,'Vulk'],[3,'Carrera'],[3,'Polaroid'],[3,'Dior'],
+  [3,'Chanel'],[3,'Versace'],[3,'Dolce & Gabbana','d g'],[3,'Armani','emporio armani|giorgio armani'],[3,'Tom Ford'],[3,'Hawkers'],[3,'Arnette'],
+  [3,'Police'],[3,'Michael Kors'],[3,'Ralph Lauren','polo ralph lauren'],[3,'Guess'],[3,'Tommy Hilfiger','tommy'],[3,'Lacoste'],[3,'Nike'],
+  [3,'Adidas'],[4,'Persol'],[4,'Maui Jim'],[4,'Quay'],[4,'Smith'],[4,'Bollé'],[4,'Vogue'],[4,'Burberry'],[4,'Fendi'],[4,'Saint Laurent','ysl'],
+  [4,'Miu Miu'],[4,'Puma'],[4,'Quiksilver'],[4,'Billabong'],[4,'Rip Curl'],[4,'Chilli Beans'],[4,'Cartier'],[4,'Bulgari','bvlgari'],
+  [5,'Costa del Mar','costa'],[5,'Oliver Peoples'],[5,'Mykita'],[5,'Gentle Monster'],[5,'Le Specs'],[5,'Revo'],[5,'Serengeti'],[5,'Julbo'],
+  [5,'Celine'],[5,'Mormaii'],[5,'Dragon'],[5,'Electric'],[5,'Spy'],[5,'VonZipper','von zipper'],[5,'Warby Parker'],[5,'Moscot'],[5,'Montblanc']]}
+ , {q:'Un estilo de barba o bigote',a:[
+  [0,'Bigote'],[0,'Candado','barba candado'],[1,'Chivita','perilla|barba de chivo|chivo'],[1,'Barba completa','barba larga|barba tupida'],
+  [1,'Barba de tres días','barba de 3 dias'],[2,'Patillas','patilla'],[2,'Bigote mexicano'],[2,'Barba hípster','hipster'],
+  [2,'Barba de leñador','lenador'],[3,'Bigote de manubrio','manubrio|bigote manubrio|handlebar'],[3,'Bigote Fu Manchú','fu manchu'],
+  [3,'Barba vikinga','vikinga'],[3,'Mosca','soul patch'],[3,'Bigote de Dalí','dali|bigote dali'],[3,'Bigote de lápiz','bigote fino|lapiz'],
+  [3,'Bigote morsa','morsa'],[4,'Herradura','bigote herradura'],[4,'Van Dyke','vandyke'],[4,'Barba ancla','ancla'],
+  [4,'Barba en collar','collar|chin strap'],[4,'Bigote cepillo','bigote chaplin|chaplin|bigote de hitler'],
+  [4,'Chuletas','patillas de chuleta|mutton chops'],[4,'Barba candado extendido','candado extendido'],[5,'Bigote chevron','chevron'],
+  [5,'Barba Garibaldi','garibaldi'],[5,'Barba Verdi','verdi'],[5,'Barba cola de pato','cola de pato|ducktail'],[5,'Imperial'],[5,'Bigote inglés'],
+  [5,'Barba Balbo','balbo'],[5,'Barba Old Dutch','old dutch'],[5,'Barba Bandholz','bandholz'],[5,'Barba francesa','french fork|barba bifurcada'],
+  [5,'Sotabarba','neckbeard']]}
+ , {q:'Un medio de noticias',a:[
+  [0,'Clarín'],[0,'La Nación'],[0,'Infobae'],[1,'TN','todo noticias'],[1,'Página/12','pagina12'],[1,'C5N'],[1,'CNN'],[1,'BBC'],
+  [1,'La Voz del Interior','la voz'],[2,'Perfil'],[2,'Olé'],[2,'Crónica','cronica tv'],[2,'A24'],[2,'Ámbito','ambito financiero'],[2,'LN+','ln mas'],
+  [2,'Telefe Noticias','telefe'],[2,'El País'],[2,'New York Times','nyt'],[2,'Cadena 3'],[3,'El Cronista'],[3,'Canal 26'],[3,'Télam'],
+  [3,'Minuto Uno'],[3,'El Destape'],[3,'El Mundo'],[3,'ABC'],[3,'Washington Post'],[3,'The Guardian','guardian'],[3,'Reuters'],[3,'EFE'],
+  [3,'Al Jazeera'],[3,'Fox News','fox'],[3,'Le Monde'],[3,'Bloomberg'],[3,'The Economist','economist'],[3,'Wall Street Journal','wsj'],
+  [3,'Radio Mitre','mitre'],[4,'La Izquierda Diario'],[4,'Diario Uno'],[4,'Los Andes'],[4,'La Capital'],[4,'El Día'],[4,'Río Negro'],
+  [4,'AP','associated press'],[4,'AFP'],[4,'DW','deutsche welle'],[4,'France 24'],[4,'Financial Times'],[4,'Time'],[4,'El Tiempo'],[4,'El Mercurio'],
+  [4,'O Globo'],[4,'NBC'],[4,'CBS'],[4,'Sky News'],[4,'RT'],[4,'Telesur'],[4,'Euronews'],[4,'La Gaceta'],[4,'Radio 10'],[4,'Continental'],
+  [4,'La Red'],[4,'Rivadavia'],[4,'Canal 12'],[5,'Xinhua'],[5,'Pravda'],[5,'El Litoral'],[5,'El Tribuno'],[5,'Futurock'],
+  [5,'elDiarioAR','el diario ar'],[5,'Chequeado'],[5,'Revista Anfibia','anfibia'],[5,'Página Política']]}
+ , {q:'Un equipo actual o histórico de la NBA, MLB, Premier League o NFL',g:'dep',a:[
+  [0,'Manchester United','man united|man utd|united'],[0,'Liverpool'],[0,'Arsenal'],[0,'Chelsea'],[0,'Los Angeles Lakers','lakers|la lakers'],
+  [0,'Manchester City','man city|city'],[1,'Chicago Bulls','bulls'],[1,'Boston Celtics','celtics'],[1,'Tottenham','tottenham hotspur'],
+  [1,'Golden State Warriors','warriors'],[1,'New York Yankees','yankees'],[1,'San Antonio Spurs','spurs'],[1,'Miami Heat','heat'],
+  [2,'New York Knicks','knicks'],[2,'Brooklyn Nets','nets|new jersey nets'],[2,'Philadelphia 76ers','76ers|sixers'],[2,'Toronto Raptors','raptors'],
+  [2,'Newcastle'],[2,'Aston Villa'],[2,'Everton'],[2,'West Ham'],[2,'Leicester'],[2,'Los Angeles Dodgers','dodgers'],[2,'Boston Red Sox','red sox'],
+  [2,'New England Patriots','patriots'],[2,'Dallas Cowboys','cowboys'],[2,'Dallas Mavericks','mavericks|mavs'],[2,'Houston Rockets','rockets'],
+  [2,'Los Angeles Clippers','clippers'],[2,'Kansas City Chiefs','chiefs'],[3,'Milwaukee Bucks','bucks'],[3,'Cleveland Cavaliers','cavaliers|cavs'],
+  [3,'Detroit Pistons','pistons'],[3,'Indiana Pacers','pacers'],[3,'Atlanta Hawks','hawks'],[3,'Charlotte Hornets','hornets'],
+  [3,'Orlando Magic','magic'],[3,'Washington Wizards','wizards'],[3,'Oklahoma City Thunder','thunder|okc'],[3,'Denver Nuggets','nuggets'],
+  [3,'Utah Jazz','jazz'],[3,'Portland Trail Blazers','trail blazers|blazers'],[3,'Minnesota Timberwolves','timberwolves'],[3,'Phoenix Suns','suns'],
+  [3,'Sacramento Kings','kings'],[3,'Memphis Grizzlies','grizzlies|vancouver grizzlies'],[3,'New Orleans Pelicans','pelicans'],[3,'Leeds'],
+  [3,'Southampton'],[3,'Wolverhampton','wolves'],[3,'Brighton'],[3,'Crystal Palace'],[3,'Fulham'],[3,'Nottingham Forest','forest'],
+  [3,'Green Bay Packers','packers'],[3,'Pittsburgh Steelers','steelers'],[3,'San Francisco 49ers','49ers|niners'],[3,'Philadelphia Eagles','eagles'],
+  [3,'New York Giants','giants|san francisco giants'],[3,'Miami Dolphins','dolphins'],[3,'Chicago Cubs','cubs'],[3,'New York Mets','mets'],
+  [3,'Seattle SuperSonics','supersonics|sonics'],[3,'Las Vegas Raiders','raiders|oakland raiders'],[4,'Brentford'],[4,'Bournemouth'],[4,'Burnley'],
+  [4,'Sunderland'],[4,'Ipswich'],[4,'Sheffield United'],[4,'Watford'],[4,'Norwich'],[4,'West Brom','west bromwich'],[4,'Stoke'],[4,'Swansea'],
+  [4,'Middlesbrough'],[4,'Blackburn'],[4,'Bolton'],[4,'Wigan'],[4,'Portsmouth'],[4,'Chicago White Sox','white sox'],
+  [4,'St. Louis Cardinals','cardinals|arizona cardinals'],[4,'Atlanta Braves','braves'],[4,'Houston Astros','astros'],
+  [4,'Philadelphia Phillies','phillies'],[4,'San Diego Padres','padres'],[4,'Seattle Mariners','mariners'],[4,'Texas Rangers','rangers'],
+  [4,'Toronto Blue Jays','blue jays'],[4,'Baltimore Orioles','orioles'],[4,'Detroit Tigers','tigers'],[4,'New York Jets','jets'],
+  [4,'Buffalo Bills','bills'],[4,'Baltimore Ravens','ravens'],[4,'Cincinnati Bengals','bengals'],[4,'Cleveland Browns','browns'],
+  [4,'Denver Broncos','broncos'],[4,'Los Angeles Chargers','chargers'],[4,'Chicago Bears','bears'],[4,'Detroit Lions','lions'],
+  [4,'Minnesota Vikings','vikings'],[4,'Seattle Seahawks','seahawks'],[4,'Los Angeles Rams','rams|st louis rams'],
+  [4,'Tampa Bay Buccaneers','buccaneers|bucs'],[4,'New Orleans Saints','saints'],[4,'Atlanta Falcons','falcons'],[4,'Carolina Panthers','panthers'],
+  [4,'Indianapolis Colts','colts'],[5,'Luton'],[5,'QPR','queens park rangers'],[5,'Reading'],[5,'Birmingham'],[5,'Blackpool'],
+  [5,'Derby County','derby'],[5,'Coventry'],[5,'Wimbledon'],[5,'Charlton'],[5,'Bradford'],[5,'Barnsley'],[5,'Oldham'],[5,'Sheffield Wednesday'],
+  [5,'Swindon'],[5,'Hull City','hull'],[5,'Cardiff'],[5,'Charlotte Bobcats','bobcats'],[5,'Minnesota Twins','twins'],
+  [5,'Kansas City Royals','royals'],[5,'Cleveland Guardians','guardians|cleveland indians'],[5,'Oakland Athletics','athletics|a s'],
+  [5,'Los Angeles Angels','angels'],[5,'Colorado Rockies','rockies'],[5,'Arizona Diamondbacks','diamondbacks'],[5,'Miami Marlins','marlins'],
+  [5,'Tampa Bay Rays','rays'],[5,'Washington Nationals','nationals'],[5,'Pittsburgh Pirates','pirates'],[5,'Cincinnati Reds','reds'],
+  [5,'Milwaukee Brewers','brewers'],[5,'Montreal Expos','expos'],[5,'Houston Texans','texans'],[5,'Jacksonville Jaguars','jaguars'],
+  [5,'Tennessee Titans','titans'],[5,'Houston Oilers','oilers'],[5,'Washington Commanders','commanders|redskins|washington redskins']]}
+ , {q:'Una palabra en inglés con L muda',a:[
+  [0,'Walk','walking'],[0,'Talk','talking'],[0,'Half'],[1,'Could'],[1,'Would'],[1,'Should'],[1,'Salmon'],[1,'Calm'],[2,'Chalk'],[2,'Palm'],[2,'Yolk'],
+  [2,'Folk','folks'],[2,'Calf'],[2,'Walker'],[3,'Stalk'],[3,'Almond'],[3,'Halves'],[3,'Calves'],[3,'Psalm'],[3,'Behalf'],[3,'Balm'],[3,'Talkative'],
+  [3,'Couldn\'t','couldnt'],[3,'Wouldn\'t','wouldnt'],[3,'Shouldn\'t','shouldnt'],[3,'Calmly'],[4,'Lincoln'],[4,'Holmes'],[4,'Balk'],[4,'Caulk'],
+  [4,'Qualm'],[4,'Alms'],[4,'Embalm'],[4,'Napalm'],[4,'Balmy'],[4,'Folklore'],[4,'Chalkboard'],[4,'Sidewalk'],[4,'Catwalk'],[4,'Jaywalk'],
+  [5,'Norfolk'],[5,'Folkestone'],[5,'Calfskin'],[5,'Halfway'],[5,'Palmistry'],[5,'Salmonella'],[5,'Lincolnshire'],[5,'Stockholm'],[5,'Beanstalk'],
+  [5,'Moonwalk']]}
 ];
 
 function norm(s){
@@ -1603,10 +1929,10 @@ function resolve(hit,why){
   $('resCondor').textContent=line;
   $('resFlavor').textContent=hit?pick(TIER_LINES[tier]):pick(why==='skip'?SKIP_LINES:MISS_LINES);
   setMood((!hit||(bet&&!betWon))?'sad':(tier===5?'super':(tier>=2||betWon?'happy':'idle')),!hit?1600:1200);
-  $('btnNext').textContent=state.i===ROUND-1?'Ver resultado':'Siguiente';
+  $('btnNext').textContent=state.i===ROUND-1?'Ver resultado':'Seguir subiendo';
   if(tier===5||(targetAlt>=5560&&before<5560))condor={x:-18,y:LH*0.36};
   sfx(hit?(tier===5?'condor':'good'):'timeout',tier);if(newCamp)sfx('camp');
-  show('result');renderHud();state.shownAt=Date.now();
+  show('result');renderHud();state.shownAt=Date.now();armAdvance();
   $('btnNext').focus({preventScroll:true});
 }
 function finish(review){
@@ -1663,9 +1989,15 @@ $('btnBet').addEventListener('click',function(){
   try{$('answer').focus({preventScroll:true});}catch(e){}
 });
 $('btnStatsBack').addEventListener('click',renderStart);
+// El resultado avanza solo; tocar el botón lo adelanta
+var ADV_MS=3500;
+function armAdvance(){var b=$('btnNext');clearTimeout(state.adv);b.classList.remove('auto');void b.offsetWidth;
+  b.style.setProperty('--adv',ADV_MS+'ms');b.classList.add('auto');state.adv=setTimeout(goNext,ADV_MS);}
+function goNext(){clearTimeout(state.adv);$('btnNext').classList.remove('auto');if(sections.result.hidden)return;
+  if(state.i===ROUND-1){finish(false);}else{state.i++;ask();}}
 $('btnNext').addEventListener('click',function(){
   if(Date.now()-state.shownAt<400)return; // el Enter que respondió no saltea el resultado
-  if(state.i===ROUND-1){finish(false);}else{state.i++;ask();}
+  goNext();
 });
 $('btnSkip').addEventListener('click',function(){if(!sections.ask.hidden)resolve(null,'skip');});
 $('btnSug').addEventListener('click',function(){
