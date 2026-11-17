@@ -177,6 +177,7 @@ textarea{width:100%;height:84px;background:rgba(4,6,20,.55);color:var(--ink);bor
       <div class="stack">
         <button id="btnDaily" type="button">Subida diaria</button>
         <button id="btnFree" type="button" class="ghost">Modo libre</button>
+        <button id="btnDown" type="button" class="ghost">Modo descenso</button>
       </div>
       <details class="how">
         <summary>Cómo se juega</summary>
@@ -184,9 +185,10 @@ textarea{width:100%;height:84px;background:rgba(4,6,20,.55);color:var(--ink);bor
         <p>Una vez por subida podés apostar: si la respuesta es Vizcacha o mejor, sus puntos valen doble. Si sale Hormiga, pasás o se acaba el tiempo, bajás 20 puntos.</p>
         <ul class="tiers" id="tierList"></ul>
         <p>La diaria cambia cada día y es la misma para todos. El modo libre no tiene límite.</p>
+        <p>Modo descenso: al revés. Arrancás en la cumbre y bajás con las respuestas más comunes: Hormiga vale 100 y Cóndor 10. La apuesta se gana con Puma o más común.</p>
       </details>
       <div class="row links"><button id="btnStats" type="button" class="link">Estadísticas</button><button id="btnAch" type="button" class="link">Logros <span id="achCount"></span></button></div>
-      <p class="ver">v1.2.0</p>
+      <p class="ver">v1.3.0</p>
     </section>
 
     <section id="sAsk" hidden>
@@ -1574,6 +1576,7 @@ QUESTIONS.forEach(function(Q){
     list.forEach(function(al){var k=norm(al);if(k)Q.keys.push({k:k,tier:row[0],name:row[1]});});
   });
   Q.condor=Q.a.filter(function(r){return r[0]===5;}).map(function(r){return r[1];});
+  Q.ant=Q.a.filter(function(r){return r[0]===0;}).map(function(r){return r[1];});
 });
 function judge(Q,text){
   var k=norm(text);if(!k)return null;
@@ -1796,6 +1799,24 @@ var TIER_LINES=[
 ];
 var SKIP_LINES=['Pasaste. A veces conviene guardar aire.','Paso. Mejor no gastar oxígeno.','Pasaste. El cerro no se va a ningún lado.'];
 var MISS_LINES=['Te quedaste en la carpa.','Sin respuesta. El viento se llevó la idea.','Nada. A tomar mate y seguir.'];
+// Descenso: mismas consignas, al revés. Las frases van por nivel real de la respuesta.
+var DOWN_LINES=[
+  ['Hormiga. Lo pensó medio país: bajás a pique.','Hormiga. Respuesta de manual, justo lo que hacía falta.','Hormiga. Bajada en tobogán.'],
+  ['Vizcacha. Bastante común, buen tranco.','Vizcacha. Bajás firme.','Vizcacha. Casi de manual.'],
+  ['Guanaco. Ni muy obvia ni muy rara.','Guanaco. Bajando tranqui.','Guanaco. Paso a paso.'],
+  ['Zorro colorado. Muy rebuscada para bajar rápido.','Zorro colorado. Te desviaste del sendero.','Zorro colorado. Pocos pensaron eso.'],
+  ['Puma. Demasiado original para este modo.','Puma. Seguís colgado de la montaña.','Puma. Eso no lo dice nadie.'],
+  ['Cóndor. Rarísima, y acá eso no ayuda.','Cóndor. Te quedaste volando arriba.','Cóndor. Respuesta de otro planeta; acá se baja con lo obvio.']
+];
+var DOWN_CAMP_LINES={
+  'Cumbre':'Ni arrancaste a bajar.',
+  'Campo Cólera':'Apenas dejaste la cumbre.',
+  'Nido de Cóndores':'Todavía entre cóndores.',
+  'Plaza Canadá':'Mitad de camino y todavía falta aire.',
+  'Plaza de Mulas':'Campo base. Ya se respira.',
+  'Confluencia':'Casi en el valle. Huele a asado.',
+  'Horcones':'De vuelta en el estacionamiento. Bajada perfecta.'
+};
 var CAMP_LINES={
   'Horcones':'No saliste del estacionamiento.',
   'Confluencia':'Primer campamento. Buen asado, poca altura.',
@@ -1999,13 +2020,13 @@ function buildLive(Q,counts){
   rows=names.map(function(n){var c=+counts[keyOf(n)]||0;total+=c;return {n:n,c:c};});
   if(total<MIN_SAMPLE)return null;
   rows.sort(function(a,b){return b.c-a.c;});
-  var cum=0,tiers={},share={},condor=[];
+  var cum=0,tiers={},share={},condor=[],ant=[];
   rows.forEach(function(r){
     var f=cum/total,t=0;while(t<CUTS.length&&f>=CUTS[t])t++;
     if(r.c===0)t=5;
-    tiers[r.n]=t;share[r.n]=r.c/total;if(t===5)condor.push(r.n);cum+=r.c;
+    tiers[r.n]=t;share[r.n]=r.c/total;if(t===5)condor.push(r.n);if(t===0)ant.push(r.n);cum+=r.c;
   });
-  return {total:total,tiers:tiers,share:share,condor:condor};
+  return {total:total,tiers:tiers,share:share,condor:condor,ant:ant};
 }
 function fetchLive(Q){
   if(!STATS_URL||Q.liveTried||!window.fetch)return;Q.liveTried=true;
@@ -2032,23 +2053,26 @@ function suggest(Q,text){
 /* ---------- Logros ---------- */
 var ACH=[
   {id:'primera',n:'Primer paso',d:'Terminá tu primera subida.',f:function(c){return true;}},
-  {id:'avistaje',n:'Avistaje',d:'Conseguí una respuesta Cóndor.',f:function(c){return c.cnt[5]>=1;}},
-  {id:'bandada',n:'Bandada',d:'Tres respuestas Cóndor en una subida.',f:function(c){return c.cnt[5]>=3;}},
-  {id:'cumbre',n:'Techo de América',d:'Llegá a la cumbre, 6.961 m.',f:function(c){return c.alt>=SUMMIT;}},
+  {id:'avistaje',m:'up',n:'Avistaje',d:'Conseguí una respuesta Cóndor.',f:function(c){return c.cnt[5]>=1;}},
+  {id:'bandada',m:'up',n:'Bandada',d:'Tres respuestas Cóndor en una subida.',f:function(c){return c.cnt[5]>=3;}},
+  {id:'cumbre',m:'up',n:'Techo de América',d:'Llegá a la cumbre, 6.961 m.',f:function(c){return c.alt>=SUMMIT;}},
   {id:'limpia',n:'Sin titubear',d:'Una subida sin pasar ni quedarte sin tiempo.',f:function(c){return c.miss===0;}},
   {id:'viento',n:'Viento a favor',d:'Las siete respuestas rápidas en una subida.',f:function(c){return c.fast===ROUND;}},
-  {id:'nienpedo',n:'Ni en pedo',d:'Ganá una apuesta con Puma o Cóndor.',f:function(c){return c.bet&&c.bet.won&&c.bet.tier>=4;}},
+  {id:'nienpedo',m:'up',n:'Ni en pedo',d:'Ganá una apuesta con Puma o Cóndor.',f:function(c){return c.bet&&c.bet.won&&c.bet.tier>=4;}},
   {id:'selajugo',n:'Se la jugó',d:'Perdé una apuesta.',f:function(c){return c.bet&&!c.bet.won;}},
   {id:'turista',n:'Turista',d:'Siete Hormigas en una subida.',f:function(c){return c.cnt[0]===ROUND;}},
   {id:'constancia',n:'Constancia',d:'Racha de 3 días jugando la diaria.',f:function(c){return c.streak>=3;}},
   {id:'aclimatado',n:'Aclimatado',d:'Racha de 7 días jugando la diaria.',f:function(c){return c.streak>=7;}},
-  {id:'andinista',n:'Andinista',d:'Completá 25 subidas.',f:function(c){return c.runs>=25;}},
-  {id:'nocturno',n:'Nocturno',d:'Jugá una subida entre la medianoche y las 5.',f:function(c){var h=new Date().getHours();return h<5;}}
+  {id:'andinista',m:'up',n:'Andinista',d:'Completá 25 subidas.',f:function(c){return c.runs>=25;}},
+  {id:'nocturno',n:'Nocturno',d:'Jugá una subida entre la medianoche y las 5.',f:function(c){var h=new Date().getHours();return h<5;}},
+  {id:'llano',m:'down',n:'Vuelta al llano',d:'Terminá tu primera bajada.',f:function(c){return true;}},
+  {id:'horcones',m:'down',n:'De vuelta en Horcones',d:'Llegá a Horcones, 2.950 m, en el modo descenso.',f:function(c){return c.alt<=START;}},
+  {id:'rebano',m:'down',n:'Pensamiento de rebaño',d:'Cinco Hormigas en una bajada.',f:function(c){return c.cnt[0]>=5;}}
 ];
 function getAch(){return loadJ('cruxio-ach',{});}
 function checkAch(ctx){
   var got=getAch(),fresh=[];
-  ACH.forEach(function(a){if(!got[a.id]&&a.f(ctx)){got[a.id]=Date.now();fresh.push(a);}});
+  ACH.forEach(function(a){if(a.m&&(a.m==='down')!==!!ctx.down)return;if(!got[a.id]&&a.f(ctx)){got[a.id]=Date.now();fresh.push(a);}});
   if(fresh.length)saveJ('cruxio-ach',got);
   return fresh;
 }
@@ -2066,7 +2090,7 @@ function renderAch(){
 
 /* ---------- Bitácora de subida ---------- */
 function renderLog(){
-  var W=320,H=176,L=40,R=12,T=10,B=24,n=state.log.length,i,a=START,alts=[START],pts=0;
+  var W=320,H=176,L=40,R=12,T=10,B=24,n=state.log.length,i,a=altFor(0),alts=[altFor(0)],pts=0;
   state.log.forEach(function(e){var d=e.pts!=null?e.pts:(e.tier<0?0:TIERS[e.tier].pts+(e.bonus!=null?e.bonus:(e.fast?FAST_PTS:0)));pts=Math.max(0,pts+d);alts.push(altFor(pts));});
   function X(k){return L+(W-L-R)*k/ROUND;}
   function Y(v){return T+(H-T-B)*(1-(v-START)/(SUMMIT-START));}
@@ -2077,7 +2101,7 @@ function renderLog(){
     if([3400,4300,5560,6961].indexOf(c[0])>=0)o+='<text x="'+(L-6)+'" y="'+(+y+3)+'" text-anchor="end" font-size="9" fill="#aab2d0" style="font-variant-numeric:tabular-nums">'+fmt(c[0])+'</text>';});
   for(i=0;i<n;i++){var e=state.log[i];
     o+='<line x1="'+X(i).toFixed(1)+'" y1="'+Y(alts[i]).toFixed(1)+'" x2="'+X(i+1).toFixed(1)+'" y2="'+Y(alts[i+1]).toFixed(1)+'" style="stroke:'+col(e.tier)+'" stroke-width="3" stroke-linecap="round"/>';}
-  o+='<circle cx="'+X(0)+'" cy="'+Y(START).toFixed(1)+'" r="3.5" fill="#f6f2e8"/>';
+  o+='<circle cx="'+X(0)+'" cy="'+Y(altFor(0)).toFixed(1)+'" r="3.5" fill="#f6f2e8"/>';
   for(i=0;i<n;i++){var e2=state.log[i],cx=X(i+1).toFixed(1),cy=Y(alts[i+1]).toFixed(1);
     if(e2.bet)o+='<circle cx="'+cx+'" cy="'+cy+'" r="8.5" fill="none" stroke="var(--sun)" stroke-width="2"/>';
     o+='<circle cx="'+cx+'" cy="'+cy+'" r="5.5" style="fill:'+col(e2.tier)+'" stroke="#0e1330" stroke-width="1.5"/>';
@@ -2091,16 +2115,23 @@ function $(id){return document.getElementById(id);}
 var hudAlt=$('hudAlt'),hudPts=$('hudPts'),hudNext=$('hudNext'),pips=$('pips');
 var sections={start:$('sStart'),ask:$('sAsk'),result:$('sResult'),end:$('sEnd'),stats:$('sStats'),ach:$('sAch')};
 var BET_LOSS=20;
-var state={mode:'',day:1,set:[],i:0,pts:0,log:[],deadline:0,timer:null,lastSec:-1,sug:null,bet:false,betUsed:false};
+var state={down:false,mode:'',day:1,set:[],i:0,pts:0,log:[],deadline:0,timer:null,lastSec:-1,sug:null,bet:false,betUsed:false};
 function fmt(n){return n.toLocaleString('es-AR');}
 function show(name){for(var k in sections)sections[k].hidden=(k!==name);$('panel').scrollTop=0;}
-function altFor(pts){return Math.min(SUMMIT,START+pts*M_PER_PT);}
-function campAt(a){var c=CAMPS[0];for(var i=0;i<CAMPS.length;i++)if(a>=CAMPS[i][0]-0.5)c=CAMPS[i];return c;}
-function nextCamp(a){for(var i=0;i<CAMPS.length;i++)if(a<CAMPS[i][0]-0.5)return CAMPS[i];return null;}
+// En el descenso el puntaje se da vuelta: la respuesta más común (nivel 0) puntúa como la más rara.
+function scoreTier(t){return t<0?t:(state.down?5-t:t);}
+function altFor(pts){return state.down?Math.max(START,SUMMIT-pts*M_PER_PT):Math.min(SUMMIT,START+pts*M_PER_PT);}
+function campAt(a){var c,i;
+  if(state.down){c=CAMPS[CAMPS.length-1];for(i=CAMPS.length-1;i>=0;i--)if(a<=CAMPS[i][0]+0.5)c=CAMPS[i];return c;}
+  c=CAMPS[0];for(i=0;i<CAMPS.length;i++)if(a>=CAMPS[i][0]-0.5)c=CAMPS[i];return c;}
+function nextCamp(a){var i;
+  if(state.down){for(i=CAMPS.length-1;i>=0;i--)if(a>CAMPS[i][0]+0.5)return CAMPS[i];return null;}
+  for(i=0;i<CAMPS.length;i++)if(a<CAMPS[i][0]-0.5)return CAMPS[i];return null;}
 function chip(tier,p){var s=document.createElement('span');s.className='chip '+(tier<0?'cx':'c'+tier);
   if(p==null)p=tier<0?0:TIERS[tier].pts;
   s.textContent=(tier<0?'Sin respuesta':TIERS[tier].name)+(p>0?' +'+p:(p<0?' −'+(-p):''));return s;}
-function modeLabel(){return state.mode==='daily'?'Diaria #'+state.day:(state.mode==='free'?'Modo libre':'');}
+function modeLabel(){return state.mode==='daily'?'Diaria #'+state.day:(state.mode==='free'?'Modo libre':(state.mode==='down'?'Descenso':''));}
+function getDown(){var s=loadJ('cruxio-down',null);if(!s)s={n:0,best:0,bottoms:0};return s;}
 function loadJ(k,def){try{var o=JSON.parse(localStorage.getItem(k)||'null');return o||def;}catch(e){return def;}}
 function saveJ(k,o){try{localStorage.setItem(k,JSON.stringify(o));}catch(e){}}
 function loadDaily(){var o=loadJ('cruxio-daily',null);return (o&&o.day===dayNumber()&&o.log&&o.log.length===ROUND)?o:null;}
@@ -2113,7 +2144,7 @@ function dias(n){return n+(n===1?' día':' días');}
 function renderHud(){
   hudPts.textContent=state.pts;
   var nc=nextCamp(targetAlt),ml=modeLabel();
-  hudNext.textContent=(ml?ml+' · ':'')+(nc?'Próximo: '+nc[1]+' ('+fmt(nc[0])+' m)':'Estás en la cumbre de América');
+  hudNext.textContent=(ml?ml+' · ':'')+(nc?'Próximo: '+nc[1]+' ('+fmt(nc[0])+' m)':(state.down?'Llegaste a Horcones':'Estás en la cumbre de América'));
   pips.innerHTML='';
   for(var i=0;i<ROUND;i++){var p=document.createElement('i');
     if(i<state.log.length){var tr=state.log[i].tier;p.style.background=tr<0?'#55597a':'var(--t'+tr+')';}
@@ -2123,7 +2154,7 @@ function renderHud(){
 function renderStart(){
   clearInterval(state.timer);
   var saved=loadDaily(),st=getStats(),sk=streakNow();
-  state.mode='';state.set=[];state.log=[];state.pts=0;state.i=0;targetAlt=START;
+  state.mode='';state.down=false;state.set=[];state.log=[];state.pts=0;state.i=0;targetAlt=START;
   $('startSub').textContent='Subida al Aconcagua · Diaria #'+dayNumber();
   $('btnDaily').textContent=saved?'Ver mi subida de hoy':'Subida diaria';
   $('best').textContent=saved?'Hoy: '+fmt(Math.round(altFor(saved.pts)))+' m':(st.best?'Mejor: '+fmt(st.best)+' m':'Cumbre: 6.961 m');
@@ -2136,6 +2167,7 @@ function renderStats(){
   var items=[['Subidas',fmt(st.n)],['Diarias',fmt(st.daily)],['Altura promedio',st.n?fmt(Math.round(st.sum/st.n))+' m':'—'],
     ['Mejor altura',st.best?fmt(st.best)+' m':'—'],['Racha actual',dias(streakNow())],['Mejor racha',dias(sk.best||0)],
     ['Cumbres',fmt(st.summits)],['Respuestas rápidas',fmt(st.fast)],['Apuestas ganadas',fmt(st.betW||0)],['Apuestas perdidas',fmt(st.betL||0)]];
+  var dn=getDown();items.push(['Bajadas',fmt(dn.n)],['Mejor bajada',dn.best?fmt(dn.best)+' m':'—']);
   g.innerHTML='';
   items.forEach(function(it){var d=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');
     dt.textContent=it[0];dd.textContent=it[1];d.appendChild(dt);d.appendChild(dd);g.appendChild(d);});
@@ -2147,23 +2179,30 @@ function renderStats(){
     var f=document.createElement('i');f.style.width=(r[1]/mx*100)+'%';f.style.background=r[2];w.appendChild(f);
     var n=document.createElement('span');n.className='cnt';n.textContent=r[1];
     row.appendChild(l);row.appendChild(w);row.appendChild(n);b.appendChild(row);});
-  $('statEmpty').hidden=st.n>0;
+  $('statEmpty').hidden=st.n>0||dn.n>0;
   show('stats');
 }
 function startDaily(){
   var saved=loadDaily();
-  state.mode='daily';state.day=dayNumber();state.set=dailySet(state.day);
+  state.mode='daily';state.down=false;state.day=dayNumber();state.set=dailySet(state.day);
   if(saved){state.pts=saved.pts;state.log=saved.log;state.i=ROUND-1;targetAlt=altFor(saved.pts);finish(true);return;}
   begin();
 }
+function startDown(){
+  state.mode='down';state.down=true;
+  state.set=freeSet();
+  begin();
+}
+function again(){if(state.mode==='down')startDown();else startFree();}
 function startFree(){
-  state.mode='free';
+  state.mode='free';state.down=false;
   state.set=freeSet();
   begin();
 }
 function begin(){
   startAudio();sfx('start');state.lastSec=-1;
-  state.i=0;state.pts=0;state.log=[];targetAlt=START;state.bet=false;state.betUsed=false;
+  state.i=0;state.pts=0;state.log=[];targetAlt=altFor(0);state.bet=false;
+  if(state.down)shownAlt=targetAlt; // el descenso arranca ya parado en la cumbrestate.betUsed=false;
   state.set.forEach(function(qi){fetchLive(QUESTIONS[qi]);});
   markSeen(state.set);
   $('shareBox').hidden=true;
@@ -2211,10 +2250,10 @@ function tick(){
 }
 function resolve(hit,why){
   clearInterval(state.timer);
-  var Q=curQ(),tier=hit?tierOf(Q,hit):-1,base=hit?TIERS[tier].pts:0;
+  var Q=curQ(),tier=hit?tierOf(Q,hit):-1,sc=scoreTier(tier),base=hit?TIERS[sc].pts:0;
   var left=Math.max(0,state.deadline-Date.now()),bonus=hit?Math.round(left/1000):0;
   var fast=!!hit&&(SECS*1000-left)<=FAST_MS,pts=base+bonus;
-  var bet=state.bet,betWon=bet&&tier>=1;
+  var bet=state.bet,betWon=bet&&sc>=1;
   if(bet){state.bet=false;state.betUsed=true;if(betWon)pts=base*2+bonus;else{pts=-BET_LOSS;bonus=0;}}
   var before=targetAlt,old=state.pts;state.pts=Math.max(0,state.pts+pts);pts=state.pts-old;targetAlt=altFor(state.pts);
   state.log.push({tier:tier,name:hit?hit.name:'',fast:fast,bonus:bonus,bet:bet,won:betWon,pts:pts});
@@ -2225,29 +2264,36 @@ function resolve(hit,why){
   var gain=Math.round(targetAlt-before),passed=campAt(targetAlt),g;
   if(bet&&!betWon)g='Apuesta perdida · '+fmt(gain)+' m';
   else g=(gain>=0?'+':'')+fmt(gain)+' m · '+(bet?base+'×2':base)+' pts'+(bonus?' +'+bonus+' por tiempo':'')+(bet?' · apuesta ganada':'');
-  var newCamp=gain>0&&passed[0]>before+0.5;
+  var newCamp=state.down?(gain<0&&passed[0]<before-0.5):(gain>0&&passed[0]>before+0.5);
   if(newCamp){g+=' · Llegaste a '+passed[1];pendingParty=true;}
   $('resGain').textContent=g;
-  var cl=Q.live?Q.live.condor:Q.condor;
+  var cl=state.down?(Q.live?Q.live.ant:Q.ant):(Q.live?Q.live.condor:Q.condor);
   var cs=cl.slice(0,3).join(' / ')+(cl.length>3?' y '+(cl.length-3)+' más':'');
-  var line=(tier===5?'Encontraste una respuesta Cóndor.':'Cóndor: '+cs);
+  var line=state.down?(tier===0?'Encontraste una respuesta Hormiga.':'Hormiga: '+cs):(tier===5?'Encontraste una respuesta Cóndor.':'Cóndor: '+cs);
   if(Q.live&&hit)line='El '+Math.round((Q.live.share[hit.name]||0)*100)+'% respondió lo mismo. '+line;
   $('resCondor').textContent=line;
-  $('resFlavor').textContent=hit?pick(TIER_LINES[tier]):pick(why==='skip'?SKIP_LINES:MISS_LINES);
-  setMood((!hit||(bet&&!betWon))?'sad':(tier===5?'super':(tier>=2||betWon?'happy':'idle')),!hit?1600:1200);
-  $('btnNext').textContent=state.i===ROUND-1?'Ver resultado':'Seguir subiendo';
-  if(tier===5||(targetAlt>=5560&&before<5560))condor={x:-18,y:LH*0.36};
-  sfx(hit?(tier===5?'condor':'good'):'timeout',tier);if(newCamp)sfx('camp');
+  $('resFlavor').textContent=hit?pick((state.down?DOWN_LINES:TIER_LINES)[tier]):pick(why==='skip'?SKIP_LINES:MISS_LINES);
+  setMood((!hit||(bet&&!betWon))?'sad':(sc===5?'super':(sc>=2||betWon?'happy':'idle')),!hit?1600:1200);
+  $('btnNext').textContent=state.i===ROUND-1?'Ver resultado':(state.down?'Seguir bajando':'Seguir subiendo');
+  if(sc===5||(!state.down&&targetAlt>=5560&&before<5560))condor={x:-18,y:LH*0.36};
+  sfx(hit?(sc===5?'condor':'good'):'timeout',sc);if(newCamp)sfx('camp');
   show('result');renderHud();state.shownAt=Date.now();armAdvance();
   $('btnNext').focus({preventScroll:true});
 }
 function finish(review){
   var fresh=[];
   var alt=Math.round(targetAlt),camp=campAt(targetAlt),daily=state.mode==='daily';
-  $('endTitle').textContent=alt>=SUMMIT?'¡Cumbre! 6.961 m':'Llegaste a '+fmt(alt)+' m';
-  $('endFlavor').textContent=CAMP_LINES[camp[1]]||'';
-  if(!review)setMood(alt>=SUMMIT?'super':'happy',1300);
-  if(!review){
+  var top=state.down?alt<=START:alt>=SUMMIT;
+  $('endTitle').textContent=state.down?(top?'¡Llegaste a Horcones!':'Bajaste hasta '+fmt(alt)+' m'):(top?'¡Cumbre! 6.961 m':'Llegaste a '+fmt(alt)+' m');
+  $('endFlavor').textContent=(state.down?DOWN_CAMP_LINES:CAMP_LINES)[camp[1]]||'';
+  if(!review)setMood(top?'super':'happy',1300);
+  if(!review&&state.down){ // las bajadas llevan sus propias estadísticas
+    var dn=getDown();dn.n++;if(!dn.best||alt<dn.best)dn.best=alt;if(top)dn.bottoms++;saveJ('cruxio-down',dn);
+    var cd={down:true,alt:alt,cnt:[0,0,0,0,0,0],miss:0,fast:0,bet:null,streak:streakNow(),runs:dn.n};
+    state.log.forEach(function(e){if(e.tier<0)cd.miss++;else cd.cnt[e.tier]++;if(e.fast)cd.fast++;if(e.bet)cd.bet={won:e.won,tier:e.tier};});
+    fresh=checkAch(cd);sfx('end');if(fresh.length)setTimeout(function(){sfx('ach');},700);
+  }
+  else if(!review){
     var st=getStats();st.n++;st.sum+=alt;if(alt>st.best)st.best=alt;if(alt>=SUMMIT)st.summits++;if(daily)st.daily++;
     state.log.forEach(function(e){if(e.tier<0)st.miss++;else st.tiers[e.tier]++;if(e.fast)st.fast++;if(e.bet){if(e.won)st.betW=(st.betW||0)+1;else st.betL=(st.betL||0)+1;}});
     saveJ('cruxio-stats',st);
@@ -2273,7 +2319,7 @@ function finish(review){
   var na=$('newAchList');na.innerHTML='';
   fresh.forEach(function(a){var sp=document.createElement('span');sp.className='pill';sp.textContent=a.n;sp.title=a.d;na.appendChild(sp);});
   $('newAch').hidden=!fresh.length;
-  $('btnAgain').textContent=daily?'Modo libre':'Otra subida';
+  $('btnAgain').textContent=daily?'Modo libre':(state.down?'Otra bajada':'Otra subida');
   $('shareBox').hidden=true;
   show('end');renderHud();
 }
@@ -2285,7 +2331,8 @@ function shareText(){
 
 $('btnDaily').addEventListener('click',startDaily);
 $('btnFree').addEventListener('click',startFree);
-$('btnAgain').addEventListener('click',startFree);
+$('btnAgain').addEventListener('click',again);
+$('btnDown').addEventListener('click',startDown);
 $('btnHome').addEventListener('click',renderStart);
 $('btnStats').addEventListener('click',renderStats);
 $('btnAch').addEventListener('click',renderAch);
